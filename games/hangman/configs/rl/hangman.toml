@@ -4,23 +4,23 @@ batch_size = 128
 rollouts_per_example = 8
 learning_rate = 5e-5
 lora_alpha = 16
-oversampling_factor = 2.0
+oversampling_factor = 1.0
 env_files = ["../../secrets.env"]
-# trajectory_strategy = "interleaved"  # or "branching"
-# max_async_level = 2
+trajectory_strategy = "branching"
+max_async_level = 1
 
 [sampling]
 max_tokens = 256
 
-# Push `alex-maraval/hangman_agent` version `0.2.1` before launching this run.
-# `difficulty_mix` is an env-native feature, and `0.2.1` adds hosted-run parsing for bracketed string inputs.
+# Push `alex-maraval/hangman_agent` version `0.2.4` before launching this run.
+# `difficulty_mix` is an env-native feature, and `0.2.x` adds hosted-run parsing for bracketed string inputs.
 [[env]]
 id = "alex-maraval/hangman_agent"
-args = { num_examples = 1000, seed = 11, difficulty_mix = [0.3, 0.4, 0.3] }
+args = { num_examples = 5000, seed = 11, difficulty_mix = [0.3, 0.4, 0.3] }
 
 [wandb]
 project = "hangman"
-name = "qwen3-4b-hangman-v021-mix-30-40-30"
+name = "qwen3-4b-hangman-v022-branching-no-filter"
 entity = "maraval-alexandre"
 
 [eval]
@@ -41,15 +41,18 @@ args = { difficulty = "medium", num_examples = 24, seed = 222 }
 id = "alex-maraval/hangman_agent"
 args = { difficulty = "hard", num_examples = 24, seed = 333 }
 
-[val]
-num_examples = 72
-rollouts_per_example = 1
-interval = 10
+# Disable validation until the run can complete step 0 cleanly.
+# [val]
+# num_examples = 72
+# rollouts_per_example = 1
+# interval = 10
 
-[buffer]
-easy_threshold = 0.75
-hard_threshold = 0.15
-easy_fraction = 0.2
-hard_fraction = 0.5
-online_difficulty_filtering = true
-seed = 42
+# Hangman has a continuous reward in roughly [0, 2], so binary-style
+# difficulty thresholds should be tuned from real rollout histograms first.
+# [buffer]
+# easy_threshold = 0.75
+# hard_threshold = 0.15
+# easy_fraction = 0.2
+# hard_fraction = 0.5
+# online_difficulty_filtering = true
+# seed = 42

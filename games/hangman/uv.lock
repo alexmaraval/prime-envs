@@ -666,7 +666,7 @@ dev = [
 
 [[package]]
 name = "hangman-agent"
-version = "0.2.3"
+version = "0.2.4"
 source = { editable = "environments/hangman_agent" }
 dependencies = [
     { name = "datasets" },

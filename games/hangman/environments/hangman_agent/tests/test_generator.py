@@ -13,6 +13,15 @@ from hangman_agent.generator import (
 
 
 class GeneratorTests(unittest.TestCase):
+    def test_lexicon_has_at_least_five_thousand_balanced_words(self) -> None:
+        lexicon = load_lexicon()
+        counts = Counter(entry.frequency_tier for entry in lexicon)
+        self.assertGreaterEqual(len(lexicon), 5000)
+        self.assertEqual(set(counts), {"common", "standard", "obscure"})
+        for tier in ("common", "standard", "obscure"):
+            self.assertGreaterEqual(counts[tier], 1500)
+            self.assertLessEqual(counts[tier], 2500)
+
     def test_presets_resolve_to_expected_defaults(self) -> None:
         config = resolve_generation_config(difficulty="hard", seed=7, num_examples=4)
         self.assertEqual(config.allowed_attempts_max, 5)
@@ -116,7 +125,7 @@ class GeneratorTests(unittest.TestCase):
             ambiguity_min=1,
             ambiguity_max=8,
         )
-        lexicon = filter_lexicon(load_lexicon(), config)
+        lexicon = filter_lexicon(load_lexicon(), config)[:2]
         records = build_records(config, lexicon, split="train")
         unique_keys = {
             (

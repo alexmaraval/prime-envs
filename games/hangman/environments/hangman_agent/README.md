@@ -7,10 +7,16 @@ Minimal multi-turn Hangman for Prime/Verifiers. Each rollout starts from a fully
 - Environment id: `hangman_agent`
 - Package path: `environments/hangman_agent/`
 - Base class: custom `vf.ToolEnv`
-- Local data: bundled TSV lexicon (`hangman_agent/data/lexicon.tsv`)
+- Local data: bundled 6000-word TSV lexicon (`hangman_agent/data/lexicon.tsv`), rebuilt with `scripts/build_lexicon.py`
 - Default dataset size: 128 train examples and 128 eval examples per resolved config
 - Default difficulty: `easy` for development-focused iteration
-- Package version: `0.2.3`
+- Package version: `0.2.4`
+
+Rebuild the lexicon with:
+
+```bash
+uv run --with wordfreq python environments/hangman_agent/scripts/build_lexicon.py
+```
 
 ## Task Contract
 
