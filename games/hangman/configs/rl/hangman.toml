@@ -16,19 +16,11 @@ max_tokens = 256
 # to pull the published environment instead of the local workspace package.
 [[env]]
 id = "alex-maraval/hangman-agent"
-args = { difficulty = "easy", num_examples = 500, seed = 11 }
-
-[[env]]
-id = "alex-maraval/hangman-agent"
-args = { difficulty = "medium", num_examples = 300, seed = 22 }
-
-[[env]]
-id = "alex-maraval/hangman-agent"
-args = { difficulty = "hard", num_examples = 200, seed = 33 }
+args = { difficulty = "medium", num_examples = 1000, seed = 11, word_length_min = 4, word_length_max = 10, frequency_tiers = ["common", "standard", "obscure"], repeat_density_min = 0.0, repeat_density_max = 0.7, allowed_attempts_min = 4, allowed_attempts_max = 12, ambiguity_min = 1, ambiguity_max = 80 }
 
 [wandb]
 project = "hangman"
-name = "qwen2.5-1.5b-hangman-curriculum"
+name = "qwen3-4b-hangman-mixed"
 entity = "maraval-alexandre"
 
 [eval]
