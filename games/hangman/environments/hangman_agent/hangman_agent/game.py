@@ -23,14 +23,13 @@ TERMINATION_TOO_MANY_INVALID_ACTIONS = "too_many_invalid_actions"
 
 REWARD_COMPONENT_KEYS = (
     "valid_guess_bonus",
-    "solve_reward",
+    "uncovered_percentage_reward",
 )
 
 
 @dataclass(frozen=True, slots=True)
 class RewardWeights:
     valid_guess_bonus: float = 0.01
-    solve_reward: float = 1.0
 
 
 DEFAULT_REWARD_WEIGHTS = RewardWeights()
@@ -214,6 +213,19 @@ def blank_reward_components() -> dict[str, float]:
     return {key: 0.0 for key in REWARD_COMPONENT_KEYS}
 
 
+def compute_uncovered_percentage(state: Mapping[str, Any]) -> float:
+    distinct_letter_count = len(set(normalize_word(str(state["secret_word"]))))
+    if distinct_letter_count <= 0:
+        return 0.0
+
+    pre_revealed_letters = set(
+        normalize_letters(state.get("task_info", {}).get("pre_revealed_letters", []))
+    )
+    guessed_correct_letters = set(normalize_letters(state["correct_guesses"]))
+    unique_letters_guessed_right = len(guessed_correct_letters - pre_revealed_letters)
+    return unique_letters_guessed_right / distinct_letter_count
+
+
 def termination_reason(state: Mapping[str, Any]) -> str | None:
     distinct_unrevealed = count_distinct_unrevealed(
         str(state["secret_word"]), state["correct_guesses"]
@@ -234,7 +246,6 @@ def apply_invalid_action(
     *,
     parsed_kind: str,
     feedback_message: str,
-    reward_weights: RewardWeights = DEFAULT_REWARD_WEIGHTS,
 ) -> dict[str, Any]:
     reward_components = blank_reward_components()
 
@@ -243,6 +254,10 @@ def apply_invalid_action(
     state["solved"] = False
     state["last_outcome"] = OUTCOME_INVALID_ACTION
     state["termination_reason"] = termination_reason(state)
+    if state["termination_reason"] is not None:
+        reward_components["uncovered_percentage_reward"] = compute_uncovered_percentage(
+            state
+        )
     state["last_feedback"] = _merge_feedback(
         feedback_message,
         state["termination_reason"],
@@ -278,14 +293,12 @@ def apply_guess(
             state,
             parsed_kind=parsed_guess.kind,
             feedback_message=parsed_guess.message,
-            reward_weights=reward_weights,
         )
     if parsed_guess.kind == "invalid_letter":
         return apply_invalid_action(
             state,
             parsed_kind=parsed_guess.kind,
             feedback_message=parsed_guess.message,
-            reward_weights=reward_weights,
         )
 
     reward_components = blank_reward_components()
@@ -338,9 +351,11 @@ def apply_guess(
 
     state["revealed_pattern"] = build_pattern(secret_word, state["correct_guesses"])
     current_termination_reason = termination_reason(state)
+    if current_termination_reason is not None:
+        reward_components["uncovered_percentage_reward"] = compute_uncovered_percentage(
+            state
+        )
     if current_termination_reason == TERMINATION_SOLVED:
-        reward_components["valid_guess_bonus"] = 0.0
-        reward_components["solve_reward"] = reward_weights.solve_reward
         state["solved"] = True
         state["termination_reason"] = current_termination_reason
         state["last_outcome"] = OUTCOME_SOLVED

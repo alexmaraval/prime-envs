@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --project games/hangman ruff check
+        language: system
+        types_or: [python, pyi]
+        files: ^games/hangman/
+      - id: pytest
+        name: pytest
+        entry: sh -c 'cd games/hangman && uv run pytest -q'
+        language: system
+        pass_filenames: false
+        files: ^games/hangman/

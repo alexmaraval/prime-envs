@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import random
 from dataclasses import asdict, dataclass, replace
 from importlib import resources
@@ -136,7 +137,22 @@ def _coerce_difficulty_mix(value: Any) -> tuple[float, float, float] | None:
     if value is None:
         return None
     if isinstance(value, str):
-        items = [item.strip() for item in value.split(",") if item.strip()]
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("difficulty_mix must be non-empty when provided as a string")
+        if stripped.startswith("[") and stripped.endswith("]"):
+            try:
+                parsed = json.loads(stripped)
+            except json.JSONDecodeError:
+                items = [item.strip() for item in stripped[1:-1].split(",") if item.strip()]
+            else:
+                if not isinstance(parsed, list):
+                    raise ValueError(
+                        "difficulty_mix string must decode to a JSON array of three weights"
+                    )
+                items = [str(item).strip() for item in parsed if str(item).strip()]
+        else:
+            items = [item.strip() for item in stripped.split(",") if item.strip()]
     else:
         items = [str(item).strip() for item in value if str(item).strip()]
     if len(items) != len(DIFFICULTY_LEVELS):

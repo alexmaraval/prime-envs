@@ -1,4 +1,24 @@
 
-# outputs from `prime eval run`
-./outputs
-./environments/*/outputs
+# Python cache and tool output
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editor / OS noise
+.idea/
+.DS_Store
+
+# Local logs
+logs/*.log
+
+# Outputs from `prime eval run`
+outputs/
+environments/*/outputs/
+
+# Generated Prime environment metadata
+environments/*/.prime/.env-metadata.json

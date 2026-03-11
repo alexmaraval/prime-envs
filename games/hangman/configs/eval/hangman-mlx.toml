@@ -1,0 +1,22 @@
+# Smoke eval for a local OpenAI-compatible mlx_lm.server instance.
+# Reads the `local-mlx` alias from `configs/endpoints.mlx.py`.
+# Prime CLI 0.5.44 may still require the equivalent explicit `--api-base-url`
+# command line flow for local endpoints because billing preflight runs before
+# config endpoint aliases are applied.
+
+endpoints_path = "../endpoints.mlx.py"
+endpoint_id = "local-mlx"
+max_concurrent = 1
+save_results = true
+state_columns = [
+  "termination_reason",
+  "last_outcome",
+  "total_reward",
+  "rollout_trace",
+]
+
+[[eval]]
+env_id = "hangman_agent"
+num_examples = 6
+rollouts_per_example = 1
+env_args = { difficulty_mix = [0.3, 0.4, 0.3] }

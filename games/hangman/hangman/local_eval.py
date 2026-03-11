@@ -53,6 +53,21 @@ def _json_dict(raw_value: str, *, flag_name: str) -> dict:
     return parsed
 
 
+def _json_float_list(raw_value: str, *, flag_name: str) -> list[float]:
+    try:
+        parsed = json.loads(raw_value)
+    except json.JSONDecodeError as exc:
+        raise argparse.ArgumentTypeError(f"{flag_name} must be valid JSON") from exc
+    if not isinstance(parsed, list):
+        raise argparse.ArgumentTypeError(f"{flag_name} must decode to a JSON array")
+    try:
+        return [float(value) for value in parsed]
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            f"{flag_name} must contain only numeric weights"
+        ) from exc
+
+
 def _resolve_port(port: int | None, host: str) -> int:
     if port is not None:
         return port
@@ -116,11 +131,18 @@ def build_server_command(
 def merge_env_args(
     raw_env_args: dict,
     difficulty: str | None,
+    difficulty_mix: Sequence[float] | None,
     num_examples: int | None = None,
 ) -> dict:
     env_args = dict(raw_env_args)
+    if difficulty is not None and difficulty_mix is not None:
+        raise LocalEvalError("Use either --difficulty or --difficulty-mix, not both.")
     if difficulty is not None:
         env_args["difficulty"] = difficulty
+        env_args.pop("difficulty_mix", None)
+    if difficulty_mix is not None:
+        env_args["difficulty_mix"] = [float(value) for value in difficulty_mix]
+        env_args.pop("difficulty", None)
     if num_examples is not None and "num_examples" not in env_args:
         env_args["num_examples"] = int(num_examples)
     return env_args
@@ -355,8 +377,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--difficulty",
-        default="easy",
-        help="Convenience override for hangman difficulty. Use --env-args for more.",
+        default=None,
+        help="Convenience override for hangman difficulty. If omitted, the environment default is used.",
+    )
+    parser.add_argument(
+        "--difficulty-mix",
+        type=lambda value: _json_float_list(value, flag_name="--difficulty-mix"),
+        default=None,
+        help=(
+            "Convenience override for mixed-difficulty evals. "
+            "Pass a JSON array like [0.3, 0.4, 0.3] in easy,medium,hard order."
+        ),
     )
     parser.add_argument(
         "--env-args",
@@ -443,7 +474,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     if prime_executable is None:
         raise LocalEvalError("The `prime` CLI is not on PATH.")
 
-    env_args = merge_env_args(args.env_args, args.difficulty, args.num_examples)
+    env_args = merge_env_args(
+        args.env_args,
+        args.difficulty,
+        args.difficulty_mix,
+        args.num_examples,
+    )
     launch = prepare_server_launch(args)
     state_columns = [value for value in args.state_columns.split(",") if value]
     prime_command = build_prime_eval_command(

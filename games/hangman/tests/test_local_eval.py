@@ -20,12 +20,23 @@ from hangman.local_eval import (
 
 class LocalEvalTest(unittest.TestCase):
     def test_merge_env_args_overrides_difficulty(self) -> None:
-        merged = merge_env_args({"difficulty": "hard", "seed": 7}, "easy", 6)
+        merged = merge_env_args({"difficulty": "hard", "seed": 7}, "easy", None, 6)
         self.assertEqual(merged, {"difficulty": "easy", "seed": 7, "num_examples": 6})
 
     def test_merge_env_args_preserves_explicit_num_examples(self) -> None:
-        merged = merge_env_args({"seed": 7, "num_examples": 3}, "easy", 6)
+        merged = merge_env_args({"seed": 7, "num_examples": 3}, "easy", None, 6)
         self.assertEqual(merged, {"difficulty": "easy", "seed": 7, "num_examples": 3})
+
+    def test_merge_env_args_supports_difficulty_mix(self) -> None:
+        merged = merge_env_args({"difficulty": "easy", "seed": 7}, None, [0.3, 0.4, 0.3], 6)
+        self.assertEqual(
+            merged,
+            {"difficulty_mix": [0.3, 0.4, 0.3], "seed": 7, "num_examples": 6},
+        )
+
+    def test_merge_env_args_rejects_difficulty_and_mix_together(self) -> None:
+        with self.assertRaisesRegex(Exception, "either --difficulty or --difficulty-mix"):
+            merge_env_args({}, "easy", [0.3, 0.4, 0.3], 6)
 
     def test_build_mlx_server_command(self) -> None:
         with patch("hangman.local_eval._resolve_sibling_executable", return_value="/tmp/mlx_lm.server"):
@@ -152,6 +163,19 @@ class LocalEvalTest(unittest.TestCase):
         args = parse_args(["--model", "mlx-community/Qwen3.5-0.8B-MLX-4bit"])
         self.assertEqual(args.startup_timeout, DEFAULT_STARTUP_TIMEOUT)
         self.assertEqual(args.state_columns, ",".join(DEFAULT_STATE_COLUMNS))
+        self.assertIsNone(args.difficulty)
+        self.assertIsNone(args.difficulty_mix)
+
+    def test_parse_args_accepts_difficulty_mix_json(self) -> None:
+        args = parse_args(
+            [
+                "--model",
+                "mlx-community/Qwen3.5-0.8B-MLX-4bit",
+                "--difficulty-mix",
+                "[0.3, 0.4, 0.3]",
+            ]
+        )
+        self.assertEqual(args.difficulty_mix, [0.3, 0.4, 0.3])
 
 
 if __name__ == "__main__":

@@ -34,6 +34,15 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(config.difficulty, "mixed")
         self.assertEqual(config.difficulty_mix, (0.3, 0.4, 0.3))
 
+    def test_difficulty_mix_accepts_bracketed_string(self) -> None:
+        config = resolve_generation_config(
+            seed=7,
+            num_examples=10,
+            difficulty_mix="[0.3, 0.4, 0.3]",
+        )
+        self.assertEqual(config.difficulty, "mixed")
+        self.assertEqual(config.difficulty_mix, (0.3, 0.4, 0.3))
+
     def test_difficulty_mix_rejects_manual_generation_overrides(self) -> None:
         with self.assertRaisesRegex(ValueError, "difficulty_mix"):
             resolve_generation_config(

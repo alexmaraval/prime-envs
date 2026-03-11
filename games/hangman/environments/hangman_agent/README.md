@@ -10,7 +10,7 @@ Minimal multi-turn Hangman for Prime/Verifiers. Each rollout starts from a fully
 - Local data: bundled TSV lexicon (`hangman_agent/data/lexicon.tsv`)
 - Default dataset size: 128 train examples and 128 eval examples per resolved config
 - Default difficulty: `easy` for development-focused iteration
-- Package version: `0.2.0`
+- Package version: `0.2.3`
 
 ## Task Contract
 
@@ -43,11 +43,12 @@ The episode ends on the first of these conditions:
 - the hang reaches 100%
 - too many invalid tool actions occur in one rollout
 
-Turn reward is intentionally simple:
+Turn reward has two components:
 
 - fresh valid letter guess: `0.01`
-- solved word: `1.0`
-- repeated or invalid action: `0.0`
+- terminal uncovered reward: `(# unique correct letters guessed) / (# unique letters in the secret word)`
+
+Repeated and invalid actions add no turn bonus. If they end the episode, they still receive the terminal uncovered reward for whatever fraction of the word was uncovered.
 
 Per-turn reward components are attached to trajectory extras for lightweight debugging.
 
@@ -85,13 +86,50 @@ Run a local smoke load:
 uv run python -c "from hangman_agent import load_environment; env = load_environment(difficulty='easy', seed=1, num_examples=2); print(type(env).__name__)"
 ```
 
-Run an eval once endpoint credentials are available:
+## Running Evals
+
+### Hosted eval with `gpt-4.1-mini`
+
+From the workspace root, load your keys and run a small smoke eval against OpenAI:
 
 ```bash
-prime eval run hangman_agent -m qwen3-30b-i -n 6 -r 2 -a '{"difficulty":"easy"}'
-prime eval run hangman_agent -m qwen3-30b-t -n 6 -r 2 -a '{"difficulty":"hard"}'
-prime eval run hangman_agent -m qwen3-30b-i -n 6 -r 2 -a '{"difficulty_mix":[0.3,0.4,0.3]}'
+set -a; source secrets.env >/dev/null 2>&1
+
+prime eval run hangman_agent \
+  -m gpt-4.1-mini \
+  -b https://api.openai.com/v1 \
+  -k OPENAI_API_KEY \
+  -n 6 \
+  -r 2 \
+  -a '{"difficulty_mix":[0.3,0.4,0.3]}' \
+  -C 'termination_reason,last_outcome,total_reward,rollout_trace' \
+  -s \
+  --skip-upload \
+  -d
 ```
+
+This uses the mixed-difficulty generator added in `0.2.x` and saves full rollout traces locally.
+
+If you prefer a single preset, swap the env args for something like `-a '{"difficulty":"easy"}'`.
+
+### Eval with a locally hosted model
+
+The simplest local path in this workspace is the helper that starts `mlx_lm.server` for you, waits for `/v1/models`, runs `prime eval run`, and then shuts the server down:
+
+```bash
+LOCAL_LLM_API_KEY=dummy \
+uv run python -m hangman.local_eval \
+  --backend mlx-lm \
+  --model mlx-community/Qwen3.5-0.8B-MLX-4bit \
+  --difficulty-mix '[0.3, 0.4, 0.3]' \
+  --num-examples 6 \
+  --rollouts-per-example 2 \
+  --max-concurrent 1
+```
+
+On the first run, `mlx-lm` may need time to download model weights before the helper sees `http://127.0.0.1:<port>/v1/models`.
+
+If you want to host the server yourself first, use either an OpenAI-compatible local server or the workspace config-driven vLLM path.
 
 Run against a local vLLM server with the dedicated workspace config:
 
@@ -113,32 +151,82 @@ prime eval run hangman_agent \
   -k LOCAL_VLLM_API_KEY \
   -n 6 \
   -r 2 \
-  -a '{"difficulty":"easy"}'
+  -a '{"difficulty_mix":[0.3,0.4,0.3]}'
 ```
 
 `configs/endpoints.vllm.py` normalizes a bare host like `http://127.0.0.1:8000` to `/v1`, so the config-driven path works with the usual vLLM server address.
 
-For an automatic local-server workflow, use the workspace helper instead of starting the server manually:
+For a one-off manual local run without the config file, pass the base URL explicitly:
 
 ```bash
-uv run python -m hangman.local_eval \
-  --backend mlx-lm \
-  --model mlx-community/Qwen3-1.7B-4bit \
-  --difficulty easy
+LOCAL_LLM_API_KEY=dummy prime eval run hangman_agent \
+  --env-dir-path environments \
+  --model mlx-community/Qwen3.5-0.8B-MLX-4bit \
+  --api-base-url http://127.0.0.1:8080/v1 \
+  --api-key-var LOCAL_LLM_API_KEY \
+  --num-examples 25 \
+  --rollouts-per-example 4 \
+  --max-concurrent 4 \
+  --env-args '{"difficulty_mix":[0.3,0.4,0.3]}' \
+  --state-columns termination_reason,last_outcome,total_reward,rollout_trace \
+  --save-results \
+  --tui \
+  --skip-upload
 ```
-
-The helper:
-
-- starts `mlx_lm.server` or `vllm serve` in the background
-- waits for the local OpenAI-compatible `/v1/models` endpoint
-- runs `prime eval run hangman_agent` against that local base URL
-- stops the server when the eval finishes unless `--keep-server` is set
 
 `mlx-lm` is the best-supported backend in this workspace because it is already included in the root project dependencies. `vllm` is also supported by the helper, but only if the `vllm` CLI is installed in the active environment.
 
+### Full eval to Hub
+```bash
+set -a; source secrets.env >/dev/null 2>&1
+
+uv run prime eval run hangman_agent \
+  --model gpt-4.1-mini \
+  --api-base-url https://api.openai.com/v1 \
+  --api-key-var OPENAI_API_KEY \
+  --num-examples 25 \
+  --rollouts-per-example 4 \
+  --env-args '{"difficulty_mix":[0.3,0.4,0.3]}' \
+  --state-columns 'termination_reason,last_outcome,total_reward,rollout_trace' \
+  --save-results \
+  --tui
+
+RUN_DIR="$(ls -td environments/hangman_agent/outputs/evals/hangman_agent--gpt-4.1-mini/* | head -n1)"
+prime eval push "$RUN_DIR"
+
+# push env again to hub
+# prime env push --path environments/hangman_agent --visibility PRIVATE
+```
+
 ## Inspecting Rollouts
 
-Saved eval outputs already include the full prompt/completion conversation in `results.jsonl`, including assistant `tool_calls`, tool responses, and the board updates for each turn. The most useful state columns for quick inspection are `termination_reason`, `last_outcome`, and `total_reward`.
+Saved eval outputs include the full prompt/completion conversation in `results.jsonl`, including assistant `tool_calls`, tool responses, and the board updates for each turn. The most useful state columns are `termination_reason`, `last_outcome`, `total_reward`, and `rollout_trace`.
+
+After a saved eval, inspect the newest output directory:
+
+```bash
+find environments/hangman_agent/outputs/evals \( -name results.jsonl -o -name metadata.json \) | tail
+```
+
+Open the rollout file directly:
+
+```bash
+less environments/hangman_agent/outputs/evals/.../results.jsonl
+```
+
+Or extract a compact summary with `jq`:
+
+```bash
+jq '{reward, termination_reason, last_outcome, total_reward}' environments/hangman_agent/outputs/evals/.../results.jsonl
+```
+
+If you want the richest traces, make sure your eval command includes:
+
+```bash
+-C 'termination_reason,last_outcome,total_reward,rollout_trace' -s
+```
+
+That adds rollout-level state fields to the saved records so you can inspect how the board evolved turn by turn.
 
 ## Environment Arguments
 

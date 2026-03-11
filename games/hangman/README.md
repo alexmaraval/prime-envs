@@ -29,7 +29,7 @@ LOCAL_LLM_API_KEY=dummy \
 uv run python -m hangman.local_eval \
   --backend mlx-lm \
   --model mlx-community/Qwen3.5-0.8B-MLX-4bit \
-  --difficulty easy \
+  --difficulty-mix '[0.3, 0.4, 0.3]' \
   --num-examples 4 \
   --rollouts-per-example 1 \
   --max-concurrent 1
@@ -51,6 +51,24 @@ uv run python -m hangman.local_eval \
 ```
 
 This requires a working `vllm` CLI in the active environment.
+
+If you prefer a config-driven eval against a manually started MLX server:
+
+```bash
+export LOCAL_MLX_MODEL="mlx-community/Qwen3.5-0.8B-MLX-4bit"
+export LOCAL_MLX_BASE_URL="http://127.0.0.1:8080"
+export LOCAL_LLM_API_KEY="dummy"
+
+prime eval run configs/eval/hangman-mlx.toml
+```
+
+`configs/endpoints.mlx.py` normalizes a bare host like `127.0.0.1:8080` to `/v1`,
+so either `127.0.0.1:8080` or `http://127.0.0.1:8080/v1` works.
+
+Note: with Prime CLI `0.5.44`, `prime eval run <config.toml>` may still do its
+hosted inference billing preflight before applying local endpoint aliases from
+the eval config. If that happens, use the explicit `--api-base-url` command in
+the manual flow below, or the `uv run python -m hangman.local_eval ...` helper.
 
 ## Manual Local Server Flow
 
@@ -76,7 +94,7 @@ LOCAL_LLM_API_KEY=dummy prime eval run hangman_agent \
   --num-examples 4 \
   --rollouts-per-example 1 \
   --max-concurrent 1 \
-  --env-args '{"difficulty":"easy"}' \
+  --env-args '{"difficulty_mix":[0.3,0.4,0.3]}' \
   --state-columns termination_reason,last_outcome,total_reward,rollout_trace \
   --save-results \
   --skip-upload \

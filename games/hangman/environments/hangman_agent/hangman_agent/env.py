@@ -23,7 +23,7 @@ from .generator import (
 
 SYSTEM_PROMPT = """You are playing Hangman.
 
-Reveal the hidden English word before the hang reaches 100%.
+Your goal is to reveal the hidden English word before the hang reaches 100%.
 On each turn, call `suggest_letter` exactly once with one new English alphabet character.
 Do not answer with XML tags or a plain-text guess.
 Think step by step before using a tool call.
