@@ -10,6 +10,7 @@ Minimal multi-turn Hangman for Prime/Verifiers. Each rollout starts from a fully
 - Local data: bundled TSV lexicon (`hangman_agent/data/lexicon.tsv`)
 - Default dataset size: 128 train examples and 128 eval examples per resolved config
 - Default difficulty: `easy` for development-focused iteration
+- Package version: `0.2.0`
 
 ## Task Contract
 
@@ -62,6 +63,7 @@ Generation controls:
 - allowed-attempt range
 - ambiguity band based on lexicon candidate count
 - difficulty presets: `easy`, `medium`, `hard`
+- optional `difficulty_mix` weights in `easy,medium,hard` order for mixed-difficulty datasets
 - deterministic `seed`
 
 Each generated state is validated to ensure:
@@ -88,6 +90,7 @@ Run an eval once endpoint credentials are available:
 ```bash
 prime eval run hangman_agent -m qwen3-30b-i -n 6 -r 2 -a '{"difficulty":"easy"}'
 prime eval run hangman_agent -m qwen3-30b-t -n 6 -r 2 -a '{"difficulty":"hard"}'
+prime eval run hangman_agent -m qwen3-30b-i -n 6 -r 2 -a '{"difficulty_mix":[0.3,0.4,0.3]}'
 ```
 
 Run against a local vLLM server with the dedicated workspace config:
@@ -144,6 +147,7 @@ Saved eval outputs already include the full prompt/completion conversation in `r
 | Arg | Type | Default | Description |
 | --- | ---- | ------- | ----------- |
 | `difficulty` | `str` | `"easy"` | High-level preset for generation constraints. |
+| `difficulty_mix` | `Sequence[float] \| str \| None` | `None` | Optional easy/medium/hard mixture weights. A value like `[0.3, 0.4, 0.3]` yields a dataset with that proportional split, normalized if needed. This cannot be combined with manual generation-range overrides. |
 | `seed` | `int` | `0` | Base seed for deterministic train/eval task generation. |
 | `num_examples` | `int` | `128` | Number of examples to generate per split. |
 | `word_length_min` / `word_length_max` | `int \| None` | preset | Override word-length range. |

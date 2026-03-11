@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import unittest
+from collections import Counter
 
 from hangman_agent.env import HangmanEnv, load_environment
 
@@ -42,6 +43,15 @@ class EnvironmentTests(unittest.TestCase):
         self.assertIn("wrong letters:", dataset[0]["prompt"][1]["content"])
         self.assertNotIn("Goal:", dataset[0]["prompt"][1]["content"])
         self.assertEqual(env.oai_tools[0]["function"]["name"], "suggest_letter")
+
+    def test_load_environment_supports_mixed_difficulty_generation(self) -> None:
+        env = load_environment(seed=3, num_examples=10, difficulty_mix=[0.3, 0.4, 0.3])
+        self.assertIsInstance(env, HangmanEnv)
+        self.assertEqual(env.generation_config.difficulty, "mixed")
+        self.assertEqual(env.generation_config.difficulty_mix, (0.3, 0.4, 0.3))
+        dataset = env.get_eval_dataset(10)
+        counts = Counter(example["info"]["difficulty"] for example in dataset)
+        self.assertEqual(counts, {"easy": 3, "medium": 4, "hard": 3})
 
     def test_env_response_records_valid_tool_step(self) -> None:
         env = load_environment(difficulty="easy", seed=9, num_examples=1)

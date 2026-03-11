@@ -4,6 +4,7 @@ import csv
 import random
 from dataclasses import asdict, dataclass, replace
 from importlib import resources
+from math import floor
 from typing import Any, Iterable, Sequence
 
 from datasets import Dataset
@@ -19,6 +20,7 @@ from .game import (
 
 DEFAULT_DATASET_SIZE = 128
 _SPLIT_OFFSETS = {"train": 0, "eval": 100_000}
+DIFFICULTY_LEVELS = ("easy", "medium", "hard")
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +52,7 @@ class GenerationConfig:
     ambiguity_max: int
     allow_partial_starts: bool
     turn_slack: int
+    difficulty_mix: tuple[float, float, float] | None = None
 
 
 PRESET_CONFIGS: dict[str, GenerationConfig] = {
@@ -72,6 +75,7 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         ambiguity_max=50,
         allow_partial_starts=False,
         turn_slack=0,
+        difficulty_mix=None,
     ),
     "medium": GenerationConfig(
         difficulty="medium",
@@ -92,6 +96,7 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         ambiguity_max=80,
         allow_partial_starts=False,
         turn_slack=0,
+        difficulty_mix=None,
     ),
     "hard": GenerationConfig(
         difficulty="hard",
@@ -112,6 +117,7 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         ambiguity_max=30,
         allow_partial_starts=False,
         turn_slack=0,
+        difficulty_mix=None,
     ),
 }
 
@@ -126,10 +132,118 @@ def _coerce_frequency_tiers(value: Any) -> tuple[str, ...] | None:
     return tuple(items)
 
 
+def _coerce_difficulty_mix(value: Any) -> tuple[float, float, float] | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        items = [item.strip() for item in value.split(",") if item.strip()]
+    else:
+        items = [str(item).strip() for item in value if str(item).strip()]
+    if len(items) != len(DIFFICULTY_LEVELS):
+        raise ValueError(
+            "difficulty_mix must provide exactly three weights in easy,medium,hard order"
+        )
+    weights = tuple(float(item) for item in items)
+    if any(weight < 0.0 for weight in weights):
+        raise ValueError("difficulty_mix weights must be non-negative")
+    total = sum(weights)
+    if total <= 0.0:
+        raise ValueError("difficulty_mix must contain at least one positive weight")
+    return tuple(weight / total for weight in weights)
+
+
+def _allocate_mixture_counts(
+    dataset_size: int, difficulty_mix: tuple[float, float, float]
+) -> tuple[int, int, int]:
+    raw_counts = [dataset_size * weight for weight in difficulty_mix]
+    counts = [floor(value) for value in raw_counts]
+    remainder = dataset_size - sum(counts)
+    ranked_remainders = sorted(
+        (
+            (raw_counts[index] - counts[index], index)
+            for index in range(len(DIFFICULTY_LEVELS))
+        ),
+        key=lambda item: (-item[0], item[1]),
+    )
+    for _, index in ranked_remainders[:remainder]:
+        counts[index] += 1
+    return tuple(counts)
+
+
+def _build_mixed_generation_config(
+    seed: int, dataset_size: int, difficulty_mix: tuple[float, float, float]
+) -> GenerationConfig:
+    active_presets = [
+        PRESET_CONFIGS[difficulty]
+        for difficulty, weight in zip(DIFFICULTY_LEVELS, difficulty_mix)
+        if weight > 0.0
+    ]
+    ordered_tiers = tuple(
+        dict.fromkeys(
+            tier for preset in active_presets for tier in preset.frequency_tiers
+        )
+    )
+    return GenerationConfig(
+        difficulty="mixed",
+        seed=int(seed),
+        dataset_size=dataset_size,
+        word_length_min=min(preset.word_length_min for preset in active_presets),
+        word_length_max=max(preset.word_length_max for preset in active_presets),
+        frequency_tiers=ordered_tiers,
+        repeat_density_min=min(preset.repeat_density_min for preset in active_presets),
+        repeat_density_max=max(preset.repeat_density_max for preset in active_presets),
+        allowed_attempts_min=min(
+            preset.allowed_attempts_min for preset in active_presets
+        ),
+        allowed_attempts_max=max(
+            preset.allowed_attempts_max for preset in active_presets
+        ),
+        pre_revealed_letters_min=0,
+        pre_revealed_letters_max=0,
+        pre_wrong_letters_min=0,
+        pre_wrong_letters_max=0,
+        ambiguity_min=min(preset.ambiguity_min for preset in active_presets),
+        ambiguity_max=max(preset.ambiguity_max for preset in active_presets),
+        allow_partial_starts=False,
+        turn_slack=0,
+        difficulty_mix=difficulty_mix,
+    )
+
+
+def _mixed_component_configs(config: GenerationConfig) -> tuple[GenerationConfig, ...]:
+    if config.difficulty_mix is None:
+        return (config,)
+    counts = _allocate_mixture_counts(config.dataset_size, config.difficulty_mix)
+    components: list[GenerationConfig] = []
+    for index, (difficulty, count) in enumerate(zip(DIFFICULTY_LEVELS, counts)):
+        if count <= 0:
+            continue
+        components.append(
+            replace(
+                PRESET_CONFIGS[difficulty],
+                seed=int(config.seed) + ((index + 1) * 10_000),
+                dataset_size=count,
+                difficulty_mix=None,
+            )
+        )
+    return tuple(components)
+
+
+def _validate_no_mix_overrides(overrides: dict[str, Any]) -> None:
+    conflicting = sorted(key for key, value in overrides.items() if value is not None)
+    if conflicting:
+        joined = ", ".join(conflicting)
+        raise ValueError(
+            "difficulty_mix uses the built-in easy/medium/hard presets and cannot be "
+            f"combined with manual generation overrides: {joined}"
+        )
+
+
 def resolve_generation_config(
     difficulty: str = "easy",
     seed: int = 0,
     num_examples: int = DEFAULT_DATASET_SIZE,
+    difficulty_mix: Sequence[float] | str | None = None,
     word_length_min: int | None = None,
     word_length_max: int | None = None,
     frequency_tiers: Sequence[str] | str | None = None,
@@ -145,16 +259,8 @@ def resolve_generation_config(
     ambiguity_max: int | None = None,
     allow_partial_starts: bool | None = None,
 ) -> GenerationConfig:
-    difficulty_key = (difficulty or "medium").lower()
-    if difficulty_key not in PRESET_CONFIGS:
-        raise ValueError(
-            f"unsupported difficulty {difficulty!r}; expected one of {sorted(PRESET_CONFIGS)}"
-        )
-
-    config = replace(PRESET_CONFIGS[difficulty_key], seed=int(seed))
     dataset_size = DEFAULT_DATASET_SIZE if int(num_examples) <= 0 else int(num_examples)
     overrides: dict[str, Any] = {
-        "dataset_size": dataset_size,
         "word_length_min": word_length_min,
         "word_length_max": word_length_max,
         "frequency_tiers": _coerce_frequency_tiers(frequency_tiers),
@@ -170,6 +276,23 @@ def resolve_generation_config(
         "ambiguity_max": ambiguity_max,
         "allow_partial_starts": allow_partial_starts,
     }
+    normalized_mix = _coerce_difficulty_mix(difficulty_mix)
+    if normalized_mix is not None:
+        _validate_no_mix_overrides(overrides)
+        return _build_mixed_generation_config(
+            seed=seed,
+            dataset_size=dataset_size,
+            difficulty_mix=normalized_mix,
+        )
+
+    difficulty_key = (difficulty or "medium").lower()
+    if difficulty_key not in PRESET_CONFIGS:
+        raise ValueError(
+            f"unsupported difficulty {difficulty!r}; expected one of {sorted(PRESET_CONFIGS)}"
+        )
+
+    config = replace(PRESET_CONFIGS[difficulty_key], seed=int(seed))
+    overrides["dataset_size"] = dataset_size
     normalized = asdict(config)
     for key, value in overrides.items():
         if value is not None:
@@ -194,6 +317,7 @@ def resolve_generation_config(
         pre_wrong_letters_max=0,
         allow_partial_starts=False,
         turn_slack=0,
+        difficulty_mix=None,
     )
 
 
@@ -403,6 +527,30 @@ def build_records(
     lexicon: Sequence[LexiconEntry],
     split: str = "train",
 ) -> list[dict[str, Any]]:
+    if config.difficulty_mix is not None:
+        records: list[dict[str, Any]] = []
+        for component_config in _mixed_component_configs(config):
+            component_lexicon = filter_lexicon(lexicon, component_config)
+            component_records = build_records(
+                config=component_config,
+                lexicon=component_lexicon,
+                split=split,
+            )
+            for record in component_records:
+                info = dict(record["info"])
+                info["requested_difficulty_mix"] = {
+                    difficulty: weight
+                    for difficulty, weight in zip(
+                        DIFFICULTY_LEVELS, config.difficulty_mix
+                    )
+                }
+                info["config"] = dict(info["config"])
+                info["config"]["difficulty_mix"] = list(config.difficulty_mix)
+                records.append({**record, "info": info})
+        rng = random.Random(_split_seed(split, config.seed, config.dataset_size))
+        rng.shuffle(records)
+        return records
+
     def build_record(task: dict[str, Any]) -> dict[str, Any]:
         initial_state = initialize_game_state(task)
         return {
