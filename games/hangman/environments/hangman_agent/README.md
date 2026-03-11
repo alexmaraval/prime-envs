@@ -43,12 +43,13 @@ The episode ends on the first of these conditions:
 - the hang reaches 100%
 - too many invalid tool actions occur in one rollout
 
-Turn reward has two components:
+Turn reward has three components:
 
 - fresh valid letter guess: `0.01`
 - terminal uncovered reward: `(# unique correct letters guessed) / (# unique letters in the secret word)`
+- solved reward: `1.0` if the word is fully uncovered at termination, else `0.0`
 
-Repeated and invalid actions add no turn bonus. If they end the episode, they still receive the terminal uncovered reward for whatever fraction of the word was uncovered.
+That means terminal reward is in `[0, 1)` for failed rollouts and exactly `2.0` for solved rollouts before any valid-guess bonus is added. Repeated and invalid actions add no turn bonus. If they end the episode, they still receive the terminal uncovered reward for whatever fraction of the word was uncovered.
 
 Per-turn reward components are attached to trajectory extras for lightweight debugging.
 

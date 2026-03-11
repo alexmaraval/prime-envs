@@ -9,7 +9,7 @@ The environment is now simpler than older versions of this workspace:
 - every game starts from a fully hidden word
 - the visible board is minimal: word pattern, wrong letters, hanged percent, turns remaining
 - the live game is driven only by turns, not by a separate attempts budget
-- the reward scheme is now a small reward for fresh valid guesses plus a terminal uncovered-percentage reward
+- the reward scheme is now a small reward for fresh valid guesses plus terminal uncovered and solved rewards
 - repeated and invalid actions no longer apply negative reward
 - there is still no `viewer.py`, `parser.py`, or `baselines.py` in the package
 
@@ -208,6 +208,8 @@ Behavior by action type:
   - reduces `turns_remaining` by 1
 - any terminal step:
   - also gives `uncovered_percentage_reward = (# unique correct letters guessed) / (# unique letters in the secret word)`
+- solved terminal step:
+  - also gives `solved_reward = 1.0`
 - repeated guess:
   - gives `0.0`
   - reduces `turns_remaining` by 1
@@ -218,9 +220,10 @@ Behavior by action type:
   - keeps the board unchanged
 - solving guess:
   - adds `uncovered_percentage_reward = 1.0`
+  - adds `solved_reward = 1.0`
   - terminates the game immediately
 
-That means the rollout still gets a small incentive for accepted guesses, and every terminal state now gets a progressive final reward based on how many distinct letters were uncovered.
+That means failed rollouts finish with a terminal reward between `0` and `1`, while solved rollouts finish with a terminal reward of `2.0` before the per-turn valid-guess bonus is added.
 
 ### 7. Termination logic
 

@@ -24,12 +24,14 @@ TERMINATION_TOO_MANY_INVALID_ACTIONS = "too_many_invalid_actions"
 REWARD_COMPONENT_KEYS = (
     "valid_guess_bonus",
     "uncovered_percentage_reward",
+    "solved_reward",
 )
 
 
 @dataclass(frozen=True, slots=True)
 class RewardWeights:
     valid_guess_bonus: float = 0.01
+    solved_reward: float = 1.0
 
 
 DEFAULT_REWARD_WEIGHTS = RewardWeights()
@@ -356,6 +358,7 @@ def apply_guess(
             state
         )
     if current_termination_reason == TERMINATION_SOLVED:
+        reward_components["solved_reward"] = reward_weights.solved_reward
         state["solved"] = True
         state["termination_reason"] = current_termination_reason
         state["last_outcome"] = OUTCOME_SOLVED

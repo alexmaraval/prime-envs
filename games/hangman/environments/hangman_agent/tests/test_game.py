@@ -74,7 +74,7 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(transition["parsed_kind"], "invalid_letter")
         self.assertEqual(transition["step_reward"], 0.0)
 
-    def test_solving_returns_full_uncovered_reward_and_bonus(self) -> None:
+    def test_solving_returns_binary_and_uncovered_rewards_plus_bonus(self) -> None:
         state = initialize_game_state(
             make_task(
                 secret_word="AA",
@@ -88,9 +88,14 @@ class GameStateTests(unittest.TestCase):
         transition = apply_guess(state, make_valid_guess("a"))
         self.assertEqual(state["termination_reason"], TERMINATION_SOLVED)
         self.assertEqual(state["last_outcome"], OUTCOME_SOLVED)
-        self.assertAlmostEqual(transition["step_reward"], 1.01, places=6)
+        self.assertAlmostEqual(transition["step_reward"], 2.01, places=6)
         self.assertAlmostEqual(
             transition["reward_components"]["uncovered_percentage_reward"],
+            1.0,
+            places=6,
+        )
+        self.assertAlmostEqual(
+            transition["reward_components"]["solved_reward"],
             1.0,
             places=6,
         )
@@ -113,6 +118,11 @@ class GameStateTests(unittest.TestCase):
         self.assertAlmostEqual(
             transition["reward_components"]["uncovered_percentage_reward"],
             0.2,
+            places=6,
+        )
+        self.assertAlmostEqual(
+            transition["reward_components"]["solved_reward"],
+            0.0,
             places=6,
         )
         self.assertAlmostEqual(transition["step_reward"], 0.21, places=6)
