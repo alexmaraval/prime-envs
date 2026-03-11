@@ -10,9 +10,9 @@ DEFAULT_SOURCE = Path("/usr/share/dict/words")
 DEFAULT_OUTPUT = (
     Path(__file__).resolve().parents[1] / "hangman_agent" / "data" / "lexicon.tsv"
 )
-WORDS_PER_TIER = 2000
+WORDS_PER_DIFFICULTY = {"easy": 3334, "medium": 3333, "hard": 3333}
 MIN_ZIPF = 1.0
-COMMON_TARGET_ZIPF = 2.4
+MEDIUM_TARGET_ZIPF = 2.4
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,13 +42,13 @@ def _load_candidates(source: Path) -> list[CandidateWord]:
     return candidates
 
 
-def _select_common(candidates: list[CandidateWord]) -> list[CandidateWord]:
+def _select_easy(candidates: list[CandidateWord]) -> list[CandidateWord]:
     pool = [candidate for candidate in candidates if 4 <= len(candidate.word) <= 6]
     selected = sorted(pool, key=lambda item: (-item.zipf, len(item.word), item.word))
-    return selected[:WORDS_PER_TIER]
+    return selected[:WORDS_PER_DIFFICULTY["easy"]]
 
 
-def _select_obscure(
+def _select_hard(
     candidates: list[CandidateWord], used_words: set[str]
 ) -> list[CandidateWord]:
     pool = [
@@ -57,10 +57,10 @@ def _select_obscure(
         if candidate.word not in used_words and 6 <= len(candidate.word) <= 10
     ]
     selected = sorted(pool, key=lambda item: (item.zipf, -len(item.word), item.word))
-    return selected[:WORDS_PER_TIER]
+    return selected[:WORDS_PER_DIFFICULTY["hard"]]
 
 
-def _select_standard(
+def _select_medium(
     candidates: list[CandidateWord], used_words: set[str]
 ) -> list[CandidateWord]:
     pool = [
@@ -71,35 +71,38 @@ def _select_standard(
     selected = sorted(
         pool,
         key=lambda item: (
-            abs(item.zipf - COMMON_TARGET_ZIPF),
+            abs(item.zipf - MEDIUM_TARGET_ZIPF),
             -item.zipf,
             len(item.word),
             item.word,
         ),
     )
-    return selected[:WORDS_PER_TIER]
+    return selected[:WORDS_PER_DIFFICULTY["medium"]]
 
 
 def build_lexicon_rows(source: Path = DEFAULT_SOURCE) -> list[tuple[str, str]]:
     candidates = _load_candidates(source)
 
-    common = _select_common(candidates)
-    used_words = {candidate.word for candidate in common}
+    easy = _select_easy(candidates)
+    used_words = {candidate.word for candidate in easy}
 
-    obscure = _select_obscure(candidates, used_words)
-    used_words.update(candidate.word for candidate in obscure)
+    hard = _select_hard(candidates, used_words)
+    used_words.update(candidate.word for candidate in hard)
 
-    standard = _select_standard(candidates, used_words)
+    medium = _select_medium(candidates, used_words)
 
-    tiers = {
-        "common": sorted(candidate.word for candidate in common),
-        "standard": sorted(candidate.word for candidate in standard),
-        "obscure": sorted(candidate.word for candidate in obscure),
+    difficulties = {
+        "easy": sorted(candidate.word for candidate in easy),
+        "medium": sorted(candidate.word for candidate in medium),
+        "hard": sorted(candidate.word for candidate in hard),
     }
+    total_words = sum(len(words) for words in difficulties.values())
+    if total_words != sum(WORDS_PER_DIFFICULTY.values()):
+        raise RuntimeError(f"expected {sum(WORDS_PER_DIFFICULTY.values())} words, got {total_words}")
     return [
-        (word, tier)
-        for tier in ("common", "standard", "obscure")
-        for word in tiers[tier]
+        (word, difficulty)
+        for difficulty in ("easy", "medium", "hard")
+        for word in difficulties[difficulty]
     ]
 
 
@@ -107,7 +110,7 @@ def write_lexicon(rows: list[tuple[str, str]], output: Path = DEFAULT_OUTPUT) ->
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t")
-        writer.writerow(("word", "frequency_tier"))
+        writer.writerow(("word", "difficulty"))
         writer.writerows(rows)
 
 
@@ -115,8 +118,8 @@ def main() -> None:
     rows = build_lexicon_rows()
     write_lexicon(rows)
     counts = {
-        tier: sum(1 for _, word_tier in rows if word_tier == tier)
-        for tier in ("common", "standard", "obscure")
+        difficulty: sum(1 for _, word_difficulty in rows if word_difficulty == difficulty)
+        for difficulty in ("easy", "medium", "hard")
     }
     print(f"Wrote {len(rows)} words to {DEFAULT_OUTPUT}")
     print(counts)

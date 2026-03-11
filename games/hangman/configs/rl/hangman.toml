@@ -12,15 +12,15 @@ max_async_level = 1
 [sampling]
 max_tokens = 256
 
-# Push `alex-maraval/hangman_agent` version `0.2.4` before launching this run.
+# Push `alex-maraval/hangman_agent` version `0.2.6` before launching this run.
 # `difficulty_mix` is an env-native feature, and `0.2.x` adds hosted-run parsing for bracketed string inputs.
 [[env]]
 id = "alex-maraval/hangman_agent"
-args = { num_examples = 5000, seed = 11, difficulty_mix = [0.3, 0.4, 0.3] }
+args = { num_examples = 1000, seed = 11, difficulty_mix = [0.3, 0.4, 0.3] }
 
 [wandb]
 project = "hangman"
-name = "qwen3-4b-hangman-v022-branching-no-filter"
+name = "qwen3-4b-hangman-v024-tagged-10k"
 entity = "maraval-alexandre"
 
 [eval]

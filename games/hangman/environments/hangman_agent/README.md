@@ -7,10 +7,10 @@ Minimal multi-turn Hangman for Prime/Verifiers. Each rollout starts from a fully
 - Environment id: `hangman_agent`
 - Package path: `environments/hangman_agent/`
 - Base class: custom `vf.ToolEnv`
-- Local data: bundled 6000-word TSV lexicon (`hangman_agent/data/lexicon.tsv`), rebuilt with `scripts/build_lexicon.py`
+- Local data: bundled 10000-word TSV lexicon tagged with `easy` / `medium` / `hard` (`hangman_agent/data/lexicon.tsv`), rebuilt with `scripts/build_lexicon.py`
 - Default dataset size: 128 train examples and 128 eval examples per resolved config
 - Default difficulty: `easy` for development-focused iteration
-- Package version: `0.2.4`
+- Package version: `0.2.6`
 
 Rebuild the lexicon with:
 
@@ -61,23 +61,18 @@ Per-turn reward components are attached to trajectory extras for lightweight deb
 
 ## Generation
 
-Tasks are generated deterministically from a curated local English lexicon. Every game starts from a fully hidden word with no pre-filled correct or wrong letters.
+Tasks are generated deterministically from a curated local English lexicon with an explicit difficulty tag on each word. Every game starts from a fully hidden word with no pre-filled correct or wrong letters.
 
 Generation controls:
 
-- word length bounds
-- frequency tiers (`common`, `standard`, `obscure`)
-- repeated-letter density bounds
+- difficulty tags (`easy`, `medium`, `hard`)
 - allowed-attempt range
-- ambiguity band based on lexicon candidate count
-- difficulty presets: `easy`, `medium`, `hard`
 - optional `difficulty_mix` weights in `easy,medium,hard` order for mixed-difficulty datasets
 - deterministic `seed`
 
-Each generated state is validated to ensure:
+For mixed datasets, the generator allocates exact per-difficulty counts from the requested mix, samples directly from the tagged lexicon pools, and shuffles the merged records.
 
-- the board is not already solved
-- candidate count is computed against the filtered lexicon used for generation
+Each generated state is validated to ensure the board is not already solved.
 
 ## Quickstart
 

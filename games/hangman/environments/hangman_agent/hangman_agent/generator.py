@@ -62,10 +62,10 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         seed=0,
         dataset_size=DEFAULT_DATASET_SIZE,
         word_length_min=4,
-        word_length_max=6,
-        frequency_tiers=("common",),
+        word_length_max=10,
+        frequency_tiers=("easy",),
         repeat_density_min=0.0,
-        repeat_density_max=0.45,
+        repeat_density_max=1.0,
         allowed_attempts_min=8,
         allowed_attempts_max=12,
         pre_revealed_letters_min=0,
@@ -73,7 +73,7 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         pre_wrong_letters_min=0,
         pre_wrong_letters_max=0,
         ambiguity_min=1,
-        ambiguity_max=50,
+        ambiguity_max=10_000,
         allow_partial_starts=False,
         turn_slack=0,
         difficulty_mix=None,
@@ -82,11 +82,11 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         difficulty="medium",
         seed=0,
         dataset_size=DEFAULT_DATASET_SIZE,
-        word_length_min=5,
-        word_length_max=8,
-        frequency_tiers=("common", "standard"),
+        word_length_min=4,
+        word_length_max=10,
+        frequency_tiers=("medium",),
         repeat_density_min=0.0,
-        repeat_density_max=0.55,
+        repeat_density_max=1.0,
         allowed_attempts_min=5,
         allowed_attempts_max=6,
         pre_revealed_letters_min=0,
@@ -94,7 +94,7 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         pre_wrong_letters_min=0,
         pre_wrong_letters_max=0,
         ambiguity_min=1,
-        ambiguity_max=80,
+        ambiguity_max=10_000,
         allow_partial_starts=False,
         turn_slack=0,
         difficulty_mix=None,
@@ -103,11 +103,11 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         difficulty="hard",
         seed=0,
         dataset_size=DEFAULT_DATASET_SIZE,
-        word_length_min=6,
+        word_length_min=4,
         word_length_max=10,
-        frequency_tiers=("standard", "obscure"),
-        repeat_density_min=0.1,
-        repeat_density_max=0.7,
+        frequency_tiers=("hard",),
+        repeat_density_min=0.0,
+        repeat_density_max=1.0,
         allowed_attempts_min=4,
         allowed_attempts_max=5,
         pre_revealed_letters_min=0,
@@ -115,7 +115,7 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         pre_wrong_letters_min=0,
         pre_wrong_letters_max=0,
         ambiguity_min=1,
-        ambiguity_max=30,
+        ambiguity_max=10_000,
         allow_partial_starts=False,
         turn_slack=0,
         difficulty_mix=None,
@@ -344,10 +344,15 @@ def load_lexicon() -> tuple[LexiconEntry, ...]:
         reader = csv.DictReader(handle, delimiter="\t")
         for row in reader:
             word = normalize_word(row["word"])
+            difficulty = (
+                row.get("difficulty")
+                or row.get("frequency_tier")
+                or ""
+            ).strip().lower()
             entries.append(
                 LexiconEntry(
                     word=word,
-                    frequency_tier=row["frequency_tier"].strip().lower(),
+                    frequency_tier=difficulty,
                     word_length=len(word),
                     distinct_letter_count=len(set(word)),
                     repeat_density=compute_repeat_density(word),
@@ -408,6 +413,15 @@ def matching_candidates(
     ]
 
 
+def _candidate_counts_by_length(
+    lexicon: Iterable[LexiconEntry],
+) -> dict[int, int]:
+    counts: dict[int, int] = {}
+    for entry in lexicon:
+        counts[entry.word_length] = counts.get(entry.word_length, 0) + 1
+    return counts
+
+
 def _split_seed(split: str, seed: int, index: int) -> int:
     return int(seed) + _SPLIT_OFFSETS.get(split, 500_000) + index
 
@@ -433,6 +447,7 @@ def _attempt_task(
     config: GenerationConfig,
     lexicon: Sequence[LexiconEntry],
     seed: int,
+    candidate_counts_by_length: dict[int, int] | None = None,
 ) -> dict[str, Any] | None:
     rng = random.Random(seed)
     pre_revealed_letters: list[str] = []
@@ -443,13 +458,18 @@ def _attempt_task(
     turns_remaining = rng.randint(config.allowed_attempts_min, config.allowed_attempts_max)
     remaining_attempts = turns_remaining
 
-    candidates = matching_candidates(
-        lexicon=lexicon,
-        pattern=pattern,
-        correct_guesses=pre_revealed_letters,
-        incorrect_guesses=pre_wrong_letters,
-    )
-    candidate_count = len(candidates)
+    # Fully hidden starts make ambiguity depend only on the filtered lexicon's
+    # word-length histogram, so avoid an O(len(lexicon)) scan per sampled task.
+    if not pre_revealed_letters and not pre_wrong_letters and candidate_counts_by_length:
+        candidate_count = candidate_counts_by_length.get(entry.word_length, 0)
+    else:
+        candidates = matching_candidates(
+            lexicon=lexicon,
+            pattern=pattern,
+            correct_guesses=pre_revealed_letters,
+            incorrect_guesses=pre_wrong_letters,
+        )
+        candidate_count = len(candidates)
     if candidate_count <= 0:
         return None
 
@@ -492,6 +512,7 @@ def sample_task(
     lexicon: Sequence[LexiconEntry],
     split: str,
     index: int,
+    candidate_counts_by_length: dict[int, int] | None = None,
 ) -> dict[str, Any]:
     seed = _split_seed(split, config.seed, index)
     rng = random.Random(seed)
@@ -500,7 +521,13 @@ def sample_task(
 
     for offset in range(256):
         entry = lexicon[rng.randrange(len(lexicon))]
-        task = _attempt_task(entry, config, lexicon, seed + offset)
+        task = _attempt_task(
+            entry,
+            config,
+            lexicon,
+            seed + offset,
+            candidate_counts_by_length=candidate_counts_by_length,
+        )
         if task is None:
             continue
 
@@ -574,37 +601,72 @@ def build_records(
             "info": task,
         }
 
-    records: list[dict[str, Any]] = []
-    seen: set[tuple[Any, ...]] = set()
-    sample_index = 0
-    stalled_attempts = 0
-    max_stalled_attempts = max(config.dataset_size * 2, 128)
+    def build_task(
+        entry: LexiconEntry,
+        turns_remaining: int,
+        seed: int,
+        candidate_count: int,
+    ) -> dict[str, Any]:
+        return {
+            "secret_word": entry.word,
+            "frequency_tier": entry.frequency_tier,
+            "difficulty": config.difficulty,
+            "remaining_attempts": turns_remaining,
+            "turns_remaining": turns_remaining,
+            "pre_revealed_letters": [],
+            "pre_wrong_letters": [],
+            "candidate_count": candidate_count,
+            "word_length": entry.word_length,
+            "distinct_letter_count": entry.distinct_letter_count,
+            "repeat_density": entry.repeat_density,
+            "seed": seed,
+            "config": {
+                "difficulty": config.difficulty,
+                "word_length_min": config.word_length_min,
+                "word_length_max": config.word_length_max,
+                "frequency_tiers": list(config.frequency_tiers),
+                "repeat_density_min": config.repeat_density_min,
+                "repeat_density_max": config.repeat_density_max,
+                "allowed_attempts_min": config.allowed_attempts_min,
+                "allowed_attempts_max": config.allowed_attempts_max,
+                "pre_revealed_letters_min": config.pre_revealed_letters_min,
+                "pre_revealed_letters_max": config.pre_revealed_letters_max,
+                "pre_wrong_letters_min": config.pre_wrong_letters_min,
+                "pre_wrong_letters_max": config.pre_wrong_letters_max,
+                "ambiguity_min": config.ambiguity_min,
+                "ambiguity_max": config.ambiguity_max,
+                "allow_partial_starts": config.allow_partial_starts,
+                "turn_slack": config.turn_slack,
+            },
+        }
 
-    while len(records) < config.dataset_size and stalled_attempts < max_stalled_attempts:
-        task = sample_task(config, lexicon, split=split, index=sample_index)
-        sample_index += 1
-        dedupe_key = (
-            task["secret_word"],
-            tuple(task["pre_revealed_letters"]),
-            tuple(task["pre_wrong_letters"]),
-            task["remaining_attempts"],
-            task["turns_remaining"],
-        )
-        if dedupe_key in seen:
-            stalled_attempts += 1
-            continue
-        stalled_attempts = 0
-        seen.add(dedupe_key)
-        records.append(build_record(task))
-
-    if not records:
+    candidate_counts = _candidate_counts_by_length(lexicon)
+    turn_values = list(
+        range(config.allowed_attempts_min, config.allowed_attempts_max + 1)
+    )
+    combinations = [
+        (entry, turns_remaining)
+        for entry in lexicon
+        for turns_remaining in turn_values
+    ]
+    if not combinations:
         raise RuntimeError("failed to generate any records for the requested config")
+    rng = random.Random(_split_seed(split, config.seed, config.dataset_size))
+    rng.shuffle(combinations)
 
-    while len(records) < config.dataset_size:
-        task = sample_task(config, lexicon, split=split, index=sample_index)
-        sample_index += 1
+    records: list[dict[str, Any]] = []
+    for sample_index in range(config.dataset_size):
+        if sample_index < len(combinations):
+            entry, turns_remaining = combinations[sample_index]
+        else:
+            entry, turns_remaining = combinations[rng.randrange(len(combinations))]
+        task = build_task(
+            entry=entry,
+            turns_remaining=turns_remaining,
+            seed=_split_seed(split, config.seed, sample_index),
+            candidate_count=candidate_counts.get(entry.word_length, 0),
+        )
         records.append(build_record(task))
-
     return records
 
 
