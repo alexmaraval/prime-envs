@@ -1,0 +1,27 @@
+[project]
+name = "hangman-agent"
+description = "A dense-reward multi-turn Hangman environment for Prime/Verifiers."
+tags = ["multi-turn", "game", "hangman", "train", "eval"]
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "datasets>=3.0.0",
+    "verifiers>=0.1.10",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = [
+    "hangman_agent/**/*.py",
+    "hangman_agent/data/*.tsv",
+    "README.md",
+    "pyproject.toml",
+    "tests/**/*.py",
+]
+
+[tool.verifiers.eval]
+num_examples = 12
+rollouts_per_example = 2

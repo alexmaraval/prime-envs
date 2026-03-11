@@ -1,0 +1,257 @@
+2026-03-10 16:37:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-10 16:37:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-10 16:37:05 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-10 16:37:05 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-10 16:37:05 - verifiers.utils.env_utils - INFO - Using default args: pre_revealed_letters_min=None, allowed_attempts_min=None, pre_wrong_letters_max=None, num_examples=128, seed=0, allow_partial_starts=None, pre_wrong_letters_min=None, allowed_attempts_max=None, pre_revealed_letters_max=None, ambiguity_max=None, word_length_max=None, word_length_min=None, repeat_density_min=None, repeat_density_max=None, ambiguity_min=None, frequency_tiers=None
+2026-03-10 16:37:05 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-10 16:37:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:60894
+2026-03-10 16:37:06 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'hard'}, extra_env_kwargs={})
+2026-03-10 16:37:06 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'hard'}
+2026-03-10 16:37:06 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-10 16:37:06 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=hard
+2026-03-10 16:37:06 - verifiers.utils.env_utils - INFO - Using default args: repeat_density_max=None, pre_wrong_letters_max=None, allowed_attempts_min=None, num_examples=128, ambiguity_max=None, allowed_attempts_max=None, allow_partial_starts=None, pre_wrong_letters_min=None, repeat_density_min=None, pre_revealed_letters_max=None, pre_revealed_letters_min=None, ambiguity_min=None, word_length_max=None, frequency_tiers=None, seed=0, word_length_min=None
+2026-03-10 16:37:06 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-10 16:37:06 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:60897
+2026-03-10 16:37:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-10 16:37:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-10 16:37:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-10 16:38:26 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-10 16:38:27 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-10 16:38:27 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-10 17:18:36 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-10 17:18:36 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-10 17:18:36 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-10 17:18:36 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-10 17:18:36 - verifiers.utils.env_utils - INFO - Using default args: frequency_tiers=None, pre_revealed_letters_max=None, pre_wrong_letters_min=None, seed=0, ambiguity_min=None, repeat_density_min=None, allow_partial_starts=None, allowed_attempts_max=None, pre_revealed_letters_min=None, word_length_max=None, allowed_attempts_min=None, num_examples=128, ambiguity_max=None, word_length_min=None, repeat_density_max=None, pre_wrong_letters_max=None
+2026-03-10 17:18:36 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-10 17:18:36 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:61568
+2026-03-10 17:18:42 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-10 17:18:42 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-10 17:18:42 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-10 17:21:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-10 17:21:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-10 17:21:21 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-10 17:21:21 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-10 17:21:21 - verifiers.utils.env_utils - INFO - Using default args: pre_wrong_letters_max=None, word_length_max=None, repeat_density_max=None, allowed_attempts_max=None, pre_wrong_letters_min=None, seed=0, num_examples=128, ambiguity_min=None, repeat_density_min=None, pre_revealed_letters_min=None, word_length_min=None, pre_revealed_letters_max=None, allowed_attempts_min=None, ambiguity_max=None, frequency_tiers=None, allow_partial_starts=None
+2026-03-10 17:21:21 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-10 17:21:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:61651
+2026-03-10 17:21:26 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-10 17:21:26 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-10 17:21:26 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 08:42:54 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-11 08:42:54 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-11 08:42:54 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 08:42:54 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-11 08:42:54 - verifiers.utils.env_utils - INFO - Using default args: allowed_attempts_min=None, repeat_density_max=None, ambiguity_min=None, pre_revealed_letters_max=None, allowed_attempts_max=None, ambiguity_max=None, pre_wrong_letters_min=None, pre_revealed_letters_min=None, word_length_min=None, seed=0, pre_wrong_letters_max=None, frequency_tiers=None, word_length_max=None, num_examples=128, repeat_density_min=None, allow_partial_starts=None
+2026-03-11 08:42:54 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 08:42:54 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:64220
+2026-03-11 08:42:58 - verifiers.workers.server.env_server.ZMQEnvServer - ERROR - Error processing request 87c3dfc19ac242fc9607c3fcb6362c68: 
+Traceback (most recent call last):
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/.venv/lib/python3.12/site-packages/verifiers/workers/server/zmq_env_server.py", line 116, in _process_request
+    response = await self._handle_run_group(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/.venv/lib/python3.12/site-packages/verifiers/workers/server/env_server.py", line 119, in _handle_run_group
+    outputs = await self.env.run_group(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 952, in run_group
+    group_states = await maybe_retry(
+                   ^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 943, in run_group_attempt
+    group_states = await asyncio.gather(*rollout_tasks)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/.venv/lib/python3.12/site-packages/verifiers/envs/multiturn_env.py", line 146, in rollout
+    prompt_messages = await self.get_prompt_messages(state)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/.venv/lib/python3.12/site-packages/verifiers/envs/multiturn_env.py", line 81, in get_prompt_messages
+    env_response = await self.env_response(messages, state)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/environments/hangman_agent/hangman_agent/env.py", line 287, in env_response
+    tool_messages, transition = self._apply_assistant_action(assistant_message, state)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/environments/hangman_agent/hangman_agent/env.py", line 180, in _apply_assistant_action
+    tool_calls = list(assistant_message.get("tool_calls") or [])
+                 ^^^^
+  File "/Users/alexandremaraval/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/bdb.py", line 90, in trace_dispatch
+    return self.dispatch_line(frame)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/bdb.py", line 115, in dispatch_line
+    if self.quitting: raise BdbQuit
+                      ^^^^^^^^^^^^^
+bdb.BdbQuit
+2026-03-11 08:42:58 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 08:42:59 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 08:42:59 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 08:43:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-11 08:43:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-11 08:43:15 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 08:43:15 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-11 08:43:15 - verifiers.utils.env_utils - INFO - Using default args: seed=0, word_length_min=None, repeat_density_min=None, ambiguity_min=None, pre_revealed_letters_min=None, ambiguity_max=None, allowed_attempts_min=None, pre_revealed_letters_max=None, pre_wrong_letters_min=None, allowed_attempts_max=None, pre_wrong_letters_max=None, frequency_tiers=None, allow_partial_starts=None, word_length_max=None, repeat_density_max=None, num_examples=128
+2026-03-11 08:43:15 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 08:43:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:64246
+2026-03-11 08:43:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 08:43:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 08:43:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 08:45:46 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-11 08:45:46 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-11 08:45:46 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 08:45:46 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-11 08:45:46 - verifiers.utils.env_utils - INFO - Using default args: repeat_density_min=None, seed=0, ambiguity_min=None, allowed_attempts_min=None, allow_partial_starts=None, word_length_min=None, pre_revealed_letters_min=None, ambiguity_max=None, pre_wrong_letters_min=None, repeat_density_max=None, pre_revealed_letters_max=None, pre_wrong_letters_max=None, frequency_tiers=None, allowed_attempts_max=None, word_length_max=None, num_examples=128
+2026-03-11 08:45:46 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 08:45:46 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:64303
+2026-03-11 08:45:59 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 08:46:00 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 08:46:00 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 08:47:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-11 08:47:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-11 08:47:15 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 08:47:15 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-11 08:47:15 - verifiers.utils.env_utils - INFO - Using default args: allowed_attempts_max=None, pre_revealed_letters_min=None, word_length_min=None, ambiguity_min=None, allow_partial_starts=None, repeat_density_max=None, pre_wrong_letters_min=None, ambiguity_max=None, word_length_max=None, seed=0, frequency_tiers=None, repeat_density_min=None, pre_wrong_letters_max=None, pre_revealed_letters_max=None, num_examples=128, allowed_attempts_min=None
+2026-03-11 08:47:15 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 08:47:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:64345
+2026-03-11 08:47:28 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 08:47:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 08:47:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 08:49:19 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-11 08:49:19 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-11 08:49:19 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 08:49:19 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-11 08:49:19 - verifiers.utils.env_utils - INFO - Using default args: repeat_density_min=None, ambiguity_min=None, allowed_attempts_max=None, pre_revealed_letters_max=None, pre_revealed_letters_min=None, pre_wrong_letters_max=None, seed=0, allow_partial_starts=None, frequency_tiers=None, num_examples=128, repeat_density_max=None, word_length_min=None, word_length_max=None, ambiguity_max=None, pre_wrong_letters_min=None, allowed_attempts_min=None
+2026-03-11 08:49:19 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 08:49:19 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:64402
+2026-03-11 08:49:24 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 08:49:24 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 08:49:24 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:08:08 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-11 09:08:08 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-11 09:08:08 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:08:08 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-11 09:08:08 - verifiers.utils.env_utils - INFO - Using default args: word_length_min=None, ambiguity_min=None, allowed_attempts_min=None, allow_partial_starts=None, pre_wrong_letters_min=None, word_length_max=None, pre_wrong_letters_max=None, seed=0, repeat_density_max=None, num_examples=128, repeat_density_min=None, pre_revealed_letters_min=None, allowed_attempts_max=None, frequency_tiers=None, ambiguity_max=None, pre_revealed_letters_max=None
+2026-03-11 09:08:08 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:08:08 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:64559
+2026-03-11 09:15:47 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGINT, initiating graceful shutdown
+2026-03-11 09:15:47 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:15:48 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:15:48 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:19:12 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy', 'num_examples': 1}, extra_env_kwargs={})
+2026-03-11 09:19:12 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy', 'num_examples': 1}
+2026-03-11 09:19:12 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:19:12 - verifiers.utils.env_utils - INFO - Using provided args: num_examples=1, difficulty=easy
+2026-03-11 09:19:12 - verifiers.utils.env_utils - INFO - Using default args: allowed_attempts_min=None, ambiguity_min=None, ambiguity_max=None, pre_wrong_letters_max=None, seed=0, repeat_density_max=None, allowed_attempts_max=None, pre_wrong_letters_min=None, frequency_tiers=None, repeat_density_min=None, word_length_min=None, pre_revealed_letters_min=None, allow_partial_starts=None, pre_revealed_letters_max=None, word_length_max=None
+2026-03-11 09:19:12 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:19:12 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:64774
+2026-03-11 09:20:01 - verifiers.envs.environment.HangmanEnv - ERROR - Aborted rollout due to ModelError() -> APIConnectionError('Connection error.') -> ConnectError('All connection attempts failed') -> ConnectError(OSError('All connection attempts failed'))
+2026-03-11 09:20:01 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:20:01 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:20:01 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:24:10 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy', 'num_examples': 5}, extra_env_kwargs={})
+2026-03-11 09:24:10 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy', 'num_examples': 5}
+2026-03-11 09:24:10 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:24:10 - verifiers.utils.env_utils - INFO - Using provided args: num_examples=5, difficulty=easy
+2026-03-11 09:24:10 - verifiers.utils.env_utils - INFO - Using default args: frequency_tiers=None, pre_revealed_letters_max=None, ambiguity_max=None, seed=0, allowed_attempts_min=None, word_length_min=None, pre_wrong_letters_max=None, repeat_density_min=None, repeat_density_max=None, allow_partial_starts=None, allowed_attempts_max=None, word_length_max=None, pre_wrong_letters_min=None, pre_revealed_letters_min=None, ambiguity_min=None
+2026-03-11 09:24:10 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:24:10 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:64844
+2026-03-11 09:24:19 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGINT, initiating graceful shutdown
+2026-03-11 09:24:19 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:24:19 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:24:19 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Cancelling 1 pending tasks
+2026-03-11 09:24:19 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:34:03 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy', 'num_examples': 5}, extra_env_kwargs={})
+2026-03-11 09:34:03 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy', 'num_examples': 5}
+2026-03-11 09:34:03 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:34:03 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy, num_examples=5
+2026-03-11 09:34:03 - verifiers.utils.env_utils - INFO - Using default args: word_length_max=None, pre_wrong_letters_min=None, ambiguity_max=None, allow_partial_starts=None, allowed_attempts_min=None, seed=0, allowed_attempts_max=None, repeat_density_max=None, frequency_tiers=None, ambiguity_min=None, word_length_min=None, repeat_density_min=None, pre_revealed_letters_min=None, pre_wrong_letters_max=None, pre_revealed_letters_max=None
+2026-03-11 09:34:03 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:34:03 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:65136
+2026-03-11 09:35:14 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:35:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:35:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:35:22 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'medium', 'num_examples': 5}, extra_env_kwargs={})
+2026-03-11 09:35:22 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'medium', 'num_examples': 5}
+2026-03-11 09:35:22 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:35:22 - verifiers.utils.env_utils - INFO - Using provided args: num_examples=5, difficulty=medium
+2026-03-11 09:35:22 - verifiers.utils.env_utils - INFO - Using default args: repeat_density_min=None, allowed_attempts_max=None, frequency_tiers=None, pre_revealed_letters_max=None, pre_wrong_letters_max=None, allowed_attempts_min=None, repeat_density_max=None, word_length_max=None, seed=0, pre_wrong_letters_min=None, pre_revealed_letters_min=None, ambiguity_max=None, word_length_min=None, ambiguity_min=None, allow_partial_starts=None
+2026-03-11 09:35:22 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:35:22 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:65394
+2026-03-11 09:36:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:36:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:36:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:36:12 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'hard', 'num_examples': 5}, extra_env_kwargs={})
+2026-03-11 09:36:12 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'hard', 'num_examples': 5}
+2026-03-11 09:36:12 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:36:12 - verifiers.utils.env_utils - INFO - Using provided args: num_examples=5, difficulty=hard
+2026-03-11 09:36:12 - verifiers.utils.env_utils - INFO - Using default args: seed=0, repeat_density_max=None, pre_wrong_letters_max=None, pre_revealed_letters_min=None, ambiguity_min=None, frequency_tiers=None, pre_revealed_letters_max=None, word_length_min=None, allowed_attempts_max=None, word_length_max=None, allow_partial_starts=None, pre_wrong_letters_min=None, repeat_density_min=None, ambiguity_max=None, allowed_attempts_min=None
+2026-03-11 09:36:12 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:36:12 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:49188
+2026-03-11 09:36:51 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:36:52 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:36:52 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:41:53 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy', 'num_examples': 5}, extra_env_kwargs={})
+2026-03-11 09:41:53 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy', 'num_examples': 5}
+2026-03-11 09:41:53 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:41:53 - verifiers.utils.env_utils - INFO - Using provided args: num_examples=5, difficulty=easy
+2026-03-11 09:41:53 - verifiers.utils.env_utils - INFO - Using default args: allowed_attempts_min=None, repeat_density_min=None, seed=0, ambiguity_min=None, allowed_attempts_max=None, word_length_max=None, frequency_tiers=None, pre_revealed_letters_max=None, repeat_density_max=None, pre_wrong_letters_min=None, pre_wrong_letters_max=None, pre_revealed_letters_min=None, word_length_min=None, allow_partial_starts=None, ambiguity_max=None
+2026-03-11 09:41:53 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:41:53 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:49384
+2026-03-11 09:43:16 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:43:17 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:43:17 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:43:25 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'medium', 'num_examples': 5}, extra_env_kwargs={})
+2026-03-11 09:43:25 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'medium', 'num_examples': 5}
+2026-03-11 09:43:25 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:43:25 - verifiers.utils.env_utils - INFO - Using provided args: num_examples=5, difficulty=medium
+2026-03-11 09:43:25 - verifiers.utils.env_utils - INFO - Using default args: frequency_tiers=None, allowed_attempts_max=None, word_length_max=None, pre_wrong_letters_min=None, ambiguity_max=None, pre_revealed_letters_min=None, pre_revealed_letters_max=None, allow_partial_starts=None, repeat_density_min=None, pre_wrong_letters_max=None, allowed_attempts_min=None, ambiguity_min=None, seed=0, word_length_min=None, repeat_density_max=None
+2026-03-11 09:43:25 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:43:25 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:49703
+2026-03-11 09:44:25 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:44:25 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:44:25 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:44:32 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'hard', 'num_examples': 5}, extra_env_kwargs={})
+2026-03-11 09:44:32 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'hard', 'num_examples': 5}
+2026-03-11 09:44:32 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:44:32 - verifiers.utils.env_utils - INFO - Using provided args: num_examples=5, difficulty=hard
+2026-03-11 09:44:32 - verifiers.utils.env_utils - INFO - Using default args: ambiguity_max=None, repeat_density_min=None, ambiguity_min=None, allowed_attempts_min=None, seed=0, pre_revealed_letters_max=None, allowed_attempts_max=None, pre_revealed_letters_min=None, pre_wrong_letters_min=None, pre_wrong_letters_max=None, word_length_min=None, frequency_tiers=None, allow_partial_starts=None, word_length_max=None, repeat_density_max=None
+2026-03-11 09:44:32 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:44:32 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:49971
+2026-03-11 09:45:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:45:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:45:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:50:20 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-11 09:50:20 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-11 09:50:20 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:50:20 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-11 09:50:20 - verifiers.utils.env_utils - INFO - Using default args: frequency_tiers=None, allowed_attempts_max=None, word_length_min=None, ambiguity_max=None, pre_revealed_letters_min=None, repeat_density_max=None, repeat_density_min=None, word_length_max=None, ambiguity_min=None, seed=0, allowed_attempts_min=None, pre_wrong_letters_max=None, num_examples=128, pre_wrong_letters_min=None, allow_partial_starts=None, pre_revealed_letters_max=None
+2026-03-11 09:50:20 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:50:20 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:50246
+2026-03-11 09:50:33 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:50:34 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:50:34 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:51:13 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'easy'}, extra_env_kwargs={})
+2026-03-11 09:51:13 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'easy'}
+2026-03-11 09:51:13 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:51:13 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=easy
+2026-03-11 09:51:13 - verifiers.utils.env_utils - INFO - Using default args: pre_wrong_letters_max=None, pre_revealed_letters_min=None, allowed_attempts_max=None, repeat_density_max=None, allow_partial_starts=None, ambiguity_min=None, frequency_tiers=None, pre_wrong_letters_min=None, word_length_min=None, allowed_attempts_min=None, num_examples=128, word_length_max=None, seed=0, repeat_density_min=None, pre_revealed_letters_max=None, ambiguity_max=None
+2026-03-11 09:51:13 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:51:13 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:50272
+2026-03-11 09:51:28 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:51:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:51:29 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:51:41 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'medium'}, extra_env_kwargs={})
+2026-03-11 09:51:41 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'medium'}
+2026-03-11 09:51:41 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:51:41 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=medium
+2026-03-11 09:51:41 - verifiers.utils.env_utils - INFO - Using default args: pre_wrong_letters_min=None, repeat_density_min=None, pre_wrong_letters_max=None, allowed_attempts_max=None, pre_revealed_letters_max=None, allow_partial_starts=None, num_examples=128, allowed_attempts_min=None, ambiguity_max=None, repeat_density_max=None, word_length_min=None, ambiguity_min=None, seed=0, word_length_max=None, frequency_tiers=None, pre_revealed_letters_min=None
+2026-03-11 09:51:41 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:51:41 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:50311
+2026-03-11 09:51:54 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:51:54 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:51:54 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down
+2026-03-11 09:52:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve hangman_agent (env_args={'difficulty': 'hard'}, extra_env_kwargs={})
+2026-03-11 09:52:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment hangman_agent with env_args={'difficulty': 'hard'}
+2026-03-11 09:52:05 - verifiers.utils.env_utils - INFO - Loading environment: hangman_agent
+2026-03-11 09:52:05 - verifiers.utils.env_utils - INFO - Using provided args: difficulty=hard
+2026-03-11 09:52:05 - verifiers.utils.env_utils - INFO - Using default args: word_length_min=None, ambiguity_min=None, seed=0, pre_revealed_letters_min=None, pre_revealed_letters_max=None, num_examples=128, ambiguity_max=None, allow_partial_starts=None, allowed_attempts_min=None, allowed_attempts_max=None, pre_wrong_letters_min=None, word_length_max=None, pre_wrong_letters_max=None, repeat_density_min=None, repeat_density_max=None, frequency_tiers=None
+2026-03-11 09:52:05 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'hangman_agent'
+2026-03-11 09:52:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:50350
+2026-03-11 09:52:14 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-03-11 09:52:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-03-11 09:52:15 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down

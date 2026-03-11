@@ -1,0 +1,8 @@
+2026-03-11 09:08:02,172 - INFO - HTTP Request: GET https://huggingface.co/api/models/mlx-community/Qwen3.5-0.8B-MLX-4bit/revision/main "HTTP/1.1 200 OK"
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 22770.38it/s]
+/Users/alexandremaraval/Documents/Projects/prime-envs/games/hangman/.venv/lib/python3.12/site-packages/mlx_lm/server.py:1829: UserWarning: mlx_lm.server is not recommended for production as it only implements basic security checks.
+  warnings.warn(
+2026-03-11 09:08:03,380 - INFO - Starting httpd at 127.0.0.1 on port 64546...
+127.0.0.1 - - [11/Mar/2026 09:08:03] "GET /v1/models HTTP/1.1" 200 -
+/Users/alexandremaraval/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

@@ -1,0 +1,19 @@
+# Smoke eval for a local OpenAI-compatible vLLM server.
+# Reads the `local-vllm` alias from `configs/endpoints.vllm.py`.
+
+endpoints_path = "../endpoints.vllm.py"
+endpoint_id = "local-vllm"
+max_concurrent = 2
+save_results = true
+state_columns = [
+  "termination_reason",
+  "last_outcome",
+  "total_reward",
+  "rollout_trace",
+]
+
+[[eval]]
+env_id = "hangman_agent"
+num_examples = 6
+rollouts_per_example = 2
+env_args = { difficulty = "easy" }
