@@ -27,6 +27,22 @@ def make_tool_completion(letter: str) -> list[dict[str, object]]:
     ]
 
 
+def make_flat_tool_completion(letter: str) -> list[dict[str, object]]:
+    return [
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_flat_1",
+                    "name": "suggest_letter",
+                    "arguments": {"letter": letter},
+                }
+            ],
+        }
+    ]
+
+
 class EnvironmentTests(unittest.TestCase):
     def test_load_environment_defaults_to_easy_generation(self) -> None:
         env = load_environment(seed=3, num_examples=3)
@@ -83,6 +99,37 @@ class EnvironmentTests(unittest.TestCase):
         self.assertIsNotNone(state["trajectory"][-1]["reward"])
         self.assertEqual(response_messages[0]["role"], "tool")
         self.assertIn("reward_components", state["trajectory"][-1]["extras"])
+        self.assertEqual(state["trajectory"][-1]["extras"]["parsed_kind"], "valid")
+
+    def test_env_response_accepts_flattened_tool_call_shape(self) -> None:
+        env = load_environment(difficulty="easy", seed=9, num_examples=1)
+        dataset = env.get_eval_dataset(1)
+        prompt = dataset[0]["prompt"]
+        completion = make_flat_tool_completion("E")
+        state = {
+            "info": dataset[0]["info"],
+            "prompt": prompt,
+            "trajectory": [
+                {
+                    "prompt": prompt,
+                    "completion": completion,
+                    "response": None,
+                    "tokens": None,
+                    "reward": None,
+                    "advantage": None,
+                    "is_truncated": False,
+                    "trajectory_id": "test",
+                    "extras": {},
+                }
+            ],
+        }
+
+        asyncio.run(env.setup_state(state))
+        response_messages = asyncio.run(
+            env.env_response(prompt + state["trajectory"][0]["completion"], state)
+        )
+        tool_payload = json.loads(response_messages[0]["content"])
+        self.assertEqual(tool_payload["status"], "accepted")
         self.assertEqual(state["trajectory"][-1]["extras"]["parsed_kind"], "valid")
 
     def test_missing_tool_call_retries_same_board(self) -> None:

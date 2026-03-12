@@ -12,7 +12,7 @@ max_async_level = 1
 [sampling]
 max_tokens = 256
 
-# Push `alex-maraval/hangman_agent` version `0.2.6` before launching this run.
+# Push `alex-maraval/hangman_agent` version `0.2.7` before launching this run.
 # `difficulty_mix` is an env-native feature, and `0.2.x` adds hosted-run parsing for bracketed string inputs.
 [[env]]
 id = "alex-maraval/hangman_agent"

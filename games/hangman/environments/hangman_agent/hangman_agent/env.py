@@ -62,6 +62,23 @@ def _tool_message(tool_call_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _tool_call_name(tool_call: dict[str, Any]) -> str:
+    function_payload = tool_call.get("function")
+    if isinstance(function_payload, dict):
+        name = function_payload.get("name")
+        if isinstance(name, str):
+            return name
+    name = tool_call.get("name")
+    return str(name) if isinstance(name, str) else ""
+
+
+def _tool_call_arguments(tool_call: dict[str, Any]) -> Any:
+    function_payload = tool_call.get("function")
+    if isinstance(function_payload, dict) and "arguments" in function_payload:
+        return function_payload.get("arguments")
+    return tool_call.get("arguments", "{}")
+
+
 def _turn_reward_sum(state: vf.State) -> float:
     return float(state.get("total_reward", 0.0))
 
@@ -197,7 +214,7 @@ class HangmanEnv(vf.ToolEnv):
 
         tool_call = tool_calls[0]
         tool_call_id = str(tool_call.get("id", ""))
-        tool_name = str(tool_call.get("function", {}).get("name", ""))
+        tool_name = _tool_call_name(tool_call)
         if tool_name != SUGGEST_LETTER_TOOL_NAME:
             feedback = self._invalid_feedback(
                 f"Unknown tool `{tool_name or '<empty>'}`. Only `{SUGGEST_LETTER_TOOL_NAME}` is available."
@@ -209,20 +226,22 @@ class HangmanEnv(vf.ToolEnv):
                 tool_call_ids=(tool_call_id,),
             )
 
-        raw_arguments = tool_call.get("function", {}).get("arguments", "{}")
-        try:
-            parsed_arguments = json.loads(str(raw_arguments))
-        except json.JSONDecodeError:
-            feedback = self._invalid_feedback(
-                "Tool arguments must be valid JSON like {\"letter\": \"E\"}."
-            )
-            return self._reject_tool_calls(
-                state,
-                parsed_kind="invalid_tool_arguments",
-                feedback=feedback,
-                tool_call_ids=(tool_call_id,),
-            )
-
+        raw_arguments = _tool_call_arguments(tool_call)
+        if isinstance(raw_arguments, dict):
+            parsed_arguments = raw_arguments
+        else:
+            try:
+                parsed_arguments = json.loads(str(raw_arguments))
+            except json.JSONDecodeError:
+                feedback = self._invalid_feedback(
+                    "Tool arguments must be valid JSON like {\"letter\": \"E\"}."
+                )
+                return self._reject_tool_calls(
+                    state,
+                    parsed_kind="invalid_tool_arguments",
+                    feedback=feedback,
+                    tool_call_ids=(tool_call_id,),
+                )
         if not isinstance(parsed_arguments, dict):
             feedback = self._invalid_feedback(
                 "Tool arguments must decode to a JSON object with a `letter` field."
