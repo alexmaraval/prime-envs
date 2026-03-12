@@ -12,11 +12,11 @@ env_file = ["../../secrets.env"]
 [sampling]
 max_tokens = 512
 
-# Push `alex-maraval/hangman_agent` version `0.2.8` before launching this run.
+# Push `alex-maraval/hangman_agent` version `0.2.9` before launching this run.
 # `difficulty_mix` is an env-native feature, and `0.2.x` adds hosted-run parsing for bracketed string inputs.
 [[env]]
 id = "alex-maraval/hangman_agent"
-args = { num_examples = 2000, seed = 11, difficulty_mix = [0.3, 0.4, 0.3] }
+args = { num_examples = 10000, seed = 11, difficulty_mix = [0.3, 0.4, 0.3] }
 
 [wandb]
 project = "hangman"
@@ -24,25 +24,17 @@ name = "qwen3-30b-a3b-hangman-v027"
 entity = "maraval-alexandre"
 
 [eval]
-interval = 25
+interval = 50
 num_examples = 25
 rollouts_per_example = 4
 eval_base_model = true
 
 [[eval.env]]
 id = "alex-maraval/hangman_agent"
-args = { difficulty = "easy", num_examples = 24, rollouts_per_example = 4, seed = 111 }
-
-[[eval.env]]
-id = "alex-maraval/hangman_agent"
-args = { difficulty = "medium", num_examples = 24, rollouts_per_example = 4, seed = 222 }
-
-[[eval.env]]
-id = "alex-maraval/hangman_agent"
-args = { difficulty = "hard", num_examples = 24, rollouts_per_example = 4, seed = 333 }
+args = { num_examples = 24, seed = 111, difficulty_mix = [0.3, 0.4, 0.3] }
 
 [val]
-num_examples = 72
+num_examples = 25
 rollouts_per_example = 1
 interval = 10
 

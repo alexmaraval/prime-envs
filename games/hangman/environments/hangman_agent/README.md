@@ -10,7 +10,7 @@ Minimal multi-turn Hangman for Prime/Verifiers. Each rollout starts from a fully
 - Local data: bundled 10000-word TSV lexicon tagged with `easy` / `medium` / `hard` (`hangman_agent/data/lexicon.tsv`), rebuilt with `scripts/build_lexicon.py`
 - Default dataset size: 128 train examples and 128 eval examples per resolved config
 - Default difficulty: `easy` for development-focused iteration
-- Package version: `0.2.8`
+- Package version: `0.2.9`
 
 Rebuild the lexicon with:
 
@@ -20,12 +20,12 @@ uv run --with wordfreq python environments/hangman_agent/scripts/build_lexicon.p
 
 ## Task Contract
 
-The assistant may emit optional reasoning text, but it must call `suggest_letter(letter: str)` exactly once per turn. The system prompt carries the rules; the first user message is only the board state.
+The assistant may emit optional reasoning text, but it must call `suggest_letter(letter: str)` exactly once per turn. The system prompt asks for minimal reasoning and the first user message is only the board state.
 
 Rules:
 
 - `letter` must be exactly one ASCII alphabetic character
-- missing tool calls, malformed tool arguments, and non-letter payloads are penalized deterministically
+- missing tool calls, malformed tool arguments, and non-letter payloads receive a small deterministic penalty
 - invalid tool usage repeats the same board with explicit feedback and does not change the board
 - repeated guesses are accepted but count as wasted turns; the feedback says whether that letter was already known correct or wrong
 - reward never depends on assistant free-text content
@@ -49,13 +49,14 @@ The episode ends on the first of these conditions:
 - the hang reaches 100%
 - too many invalid tool actions occur in one rollout
 
-Turn reward has three components:
+Turn reward has four components:
 
-- fresh valid letter guess: `0.01`
-- terminal uncovered reward: `(# unique correct letters guessed) / (# unique letters in the secret word)`
+- fresh valid letter guess: `0.0` by default
+- progress reward: fraction of initially hidden positions revealed by the current guess
 - solved reward: `1.0` if the word is fully uncovered at termination, else `0.0`
+- invalid action penalty: `-0.05` for a malformed or missing tool call on a turn
 
-That means terminal reward is in `[0, 1)` for failed rollouts and exactly `2.0` for solved rollouts before any valid-guess bonus is added. Repeated and invalid actions add no turn bonus. If they end the episode, they still receive the terminal uncovered reward for whatever fraction of the word was uncovered.
+That means solved rollouts can still reach `2.0` from `1.0` progress plus `1.0` solved reward, while repeated guesses give no bonus and invalid tool usage incurs the small penalty above.
 
 Per-turn reward components are attached to trajectory extras for lightweight debugging.
 

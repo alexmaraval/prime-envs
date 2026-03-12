@@ -26,7 +26,7 @@ SYSTEM_PROMPT = """You are playing Hangman.
 Your goal is to reveal the hidden English word before the hang reaches 100%.
 On each turn, call `suggest_letter` exactly once with one new English alphabet character.
 Do not answer with XML tags or a plain-text guess.
-Think step by step before using a tool call.
+Keep any reasoning minimal and focus on choosing the best next letter.
 """
 
 SUGGEST_LETTER_TOOL_NAME = "suggest_letter"

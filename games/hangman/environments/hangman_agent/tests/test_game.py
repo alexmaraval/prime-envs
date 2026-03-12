@@ -78,7 +78,7 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(state["turns_remaining"], 5)
         self.assertEqual(state["last_outcome"], OUTCOME_INVALID_ACTION)
         self.assertEqual(transition["parsed_kind"], "invalid_letter")
-        self.assertEqual(transition["step_reward"], 0.0)
+        self.assertEqual(transition["step_reward"], -0.05)
 
     def test_solving_returns_binary_and_uncovered_rewards_plus_bonus(self) -> None:
         state = initialize_game_state(
@@ -157,6 +157,20 @@ class GameStateTests(unittest.TestCase):
             places=6,
         )
         self.assertAlmostEqual(transition["step_reward"], 0.4, places=6)
+
+    def test_invalid_action_penalty_is_configurable(self) -> None:
+        state = initialize_game_state(make_task(turns_remaining=4))
+        transition = apply_guess(
+            state,
+            make_invalid_guess(),
+            reward_weights=RewardWeights(invalid_action_penalty=-0.2),
+        )
+        self.assertAlmostEqual(
+            transition["reward_components"]["invalid_action_penalty"],
+            -0.2,
+            places=6,
+        )
+        self.assertAlmostEqual(transition["step_reward"], -0.2, places=6)
 
     def test_game_ends_when_hang_reaches_hundred_percent(self) -> None:
         state = initialize_game_state(make_task(secret_word="MANGO", turns_remaining=1))

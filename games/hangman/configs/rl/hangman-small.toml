@@ -25,21 +25,13 @@ entity = "maraval-alexandre"
 
 [eval]
 interval = 25
-num_examples = 25
+num_examples = 24
 rollouts_per_example = 4
 eval_base_model = true
 
 [[eval.env]]
 id = "alex-maraval/hangman_agent"
-args = { difficulty = "easy", num_examples = 24, rollouts_per_example = 4, seed = 111 }
-
-[[eval.env]]
-id = "alex-maraval/hangman_agent"
-args = { difficulty = "medium", num_examples = 24, rollouts_per_example = 4, seed = 222 }
-
-[[eval.env]]
-id = "alex-maraval/hangman_agent"
-args = { difficulty = "hard", num_examples = 24, rollouts_per_example = 4, seed = 333 }
+args = { num_examples = 24, seed = 111, difficulty_mix = [0.3, 0.4, 0.3] }
 
 # Disable validation until the run can complete step 0 cleanly.
 # [val]

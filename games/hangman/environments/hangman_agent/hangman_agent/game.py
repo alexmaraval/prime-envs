@@ -25,6 +25,7 @@ REWARD_COMPONENT_KEYS = (
     "valid_action_reward",
     "progress_reward",
     "solved_reward",
+    "invalid_action_penalty",
 )
 
 
@@ -32,6 +33,7 @@ REWARD_COMPONENT_KEYS = (
 class RewardWeights:
     valid_action_reward: float = 0.0
     solved_reward: float = 1.0
+    invalid_action_penalty: float = -0.05
 
 
 DEFAULT_REWARD_WEIGHTS = RewardWeights()
@@ -244,8 +246,10 @@ def apply_invalid_action(
     *,
     parsed_kind: str,
     feedback_message: str,
+    reward_weights: RewardWeights = DEFAULT_REWARD_WEIGHTS,
 ) -> dict[str, Any]:
     reward_components = blank_reward_components()
+    reward_components["invalid_action_penalty"] = reward_weights.invalid_action_penalty
 
     state["last_guess"] = None
     state["num_invalid_outputs"] += 1
@@ -287,12 +291,14 @@ def apply_guess(
             state,
             parsed_kind=parsed_guess.kind,
             feedback_message=parsed_guess.message,
+            reward_weights=reward_weights,
         )
     if parsed_guess.kind == "invalid_letter":
         return apply_invalid_action(
             state,
             parsed_kind=parsed_guess.kind,
             feedback_message=parsed_guess.message,
+            reward_weights=reward_weights,
         )
 
     reward_components = blank_reward_components()

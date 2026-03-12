@@ -165,6 +165,7 @@ class EnvironmentTests(unittest.TestCase):
         self.assertEqual(response_messages[-1]["role"], "user")
         self.assertEqual(state["turns_remaining"], starting_turns)
         self.assertEqual(state["last_outcome"], "invalid_action")
+        self.assertEqual(state["last_reward"], -0.05)
         self.assertIn("suggest_letter", state["last_feedback"])
         self.assertIn("unchanged", state["last_feedback"].lower())
 
