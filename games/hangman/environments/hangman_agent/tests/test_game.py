@@ -7,6 +7,7 @@ from hangman_agent.game import (
     OUTCOME_REPEAT,
     OUTCOME_SOLVED,
     ParsedGuess,
+    RewardWeights,
     TERMINATION_SOLVED,
     TERMINATION_TURNS_EXHAUSTED,
     apply_guess,
@@ -44,13 +45,18 @@ def make_invalid_guess(kind: str = "invalid_letter") -> ParsedGuess:
 
 
 class GameStateTests(unittest.TestCase):
-    def test_correct_guess_reveals_all_instances_and_gets_small_bonus(self) -> None:
+    def test_correct_guess_rewards_progress_delta(self) -> None:
         state = initialize_game_state(make_task())
         transition = apply_guess(state, make_valid_guess("p"))
         self.assertEqual(state["revealed_pattern"], ["_", "P", "P", "_", "_"])
-        self.assertAlmostEqual(transition["step_reward"], 0.01, places=6)
+        self.assertAlmostEqual(transition["step_reward"], 0.4, places=6)
         self.assertEqual(state["positions_revealed"], 2)
         self.assertEqual(state["turns_remaining"], 6)
+        self.assertAlmostEqual(
+            transition["reward_components"]["progress_reward"],
+            0.4,
+            places=6,
+        )
 
     def test_repeated_guess_consumes_turn_and_gives_no_bonus(self) -> None:
         state = initialize_game_state(
@@ -88,9 +94,9 @@ class GameStateTests(unittest.TestCase):
         transition = apply_guess(state, make_valid_guess("a"))
         self.assertEqual(state["termination_reason"], TERMINATION_SOLVED)
         self.assertEqual(state["last_outcome"], OUTCOME_SOLVED)
-        self.assertAlmostEqual(transition["step_reward"], 2.01, places=6)
+        self.assertAlmostEqual(transition["step_reward"], 2.0, places=6)
         self.assertAlmostEqual(
-            transition["reward_components"]["uncovered_percentage_reward"],
+            transition["reward_components"]["progress_reward"],
             1.0,
             places=6,
         )
@@ -100,7 +106,7 @@ class GameStateTests(unittest.TestCase):
             places=6,
         )
 
-    def test_failed_terminal_step_returns_partial_uncovered_reward(self) -> None:
+    def test_failed_terminal_step_gives_no_partial_terminal_reward(self) -> None:
         state = initialize_game_state(
             make_task(
                 secret_word="ABACUS",
@@ -116,8 +122,8 @@ class GameStateTests(unittest.TestCase):
 
         self.assertEqual(state["termination_reason"], TERMINATION_TURNS_EXHAUSTED)
         self.assertAlmostEqual(
-            transition["reward_components"]["uncovered_percentage_reward"],
-            0.2,
+            transition["reward_components"]["progress_reward"],
+            0.0,
             places=6,
         )
         self.assertAlmostEqual(
@@ -125,7 +131,7 @@ class GameStateTests(unittest.TestCase):
             0.0,
             places=6,
         )
-        self.assertAlmostEqual(transition["step_reward"], 0.21, places=6)
+        self.assertAlmostEqual(transition["step_reward"], 0.0, places=6)
 
     def test_wrong_guess_consumes_turn_and_records_wrong_letter(self) -> None:
         state = initialize_game_state(make_task(secret_word="MANGO", turns_remaining=4))
@@ -133,11 +139,30 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(state["turns_remaining"], 3)
         self.assertEqual(state["incorrect_guesses"], ["Z"])
 
+    def test_valid_action_reward_is_configurable_and_zero_by_default(self) -> None:
+        state = initialize_game_state(make_task(secret_word="MANGO", turns_remaining=4))
+        transition = apply_guess(
+            state,
+            make_valid_guess("m"),
+            reward_weights=RewardWeights(valid_action_reward=0.2, solved_reward=1.0),
+        )
+        self.assertAlmostEqual(
+            transition["reward_components"]["progress_reward"],
+            0.2,
+            places=6,
+        )
+        self.assertAlmostEqual(
+            transition["reward_components"]["valid_action_reward"],
+            0.2,
+            places=6,
+        )
+        self.assertAlmostEqual(transition["step_reward"], 0.4, places=6)
+
     def test_game_ends_when_hang_reaches_hundred_percent(self) -> None:
         state = initialize_game_state(make_task(secret_word="MANGO", turns_remaining=1))
         transition = apply_guess(state, make_valid_guess("z"))
         self.assertEqual(state["termination_reason"], TERMINATION_TURNS_EXHAUSTED)
-        self.assertEqual(transition["step_reward"], 0.01)
+        self.assertEqual(transition["step_reward"], 0.0)
 
     def test_render_board_is_minimal(self) -> None:
         state = initialize_game_state(
