@@ -117,35 +117,42 @@ If you prefer a single preset, swap the env args for something like `-a '{"diffi
 
 ### Eval with a locally hosted model
 
-The simplest local path in this workspace is the helper that starts `mlx_lm.server` for you, waits for `/v1/models`, runs `prime eval run`, and then shuts the server down:
+For local testing, use the helper script. It starts the model server, waits for it to become ready, runs `prime eval run`, and then shuts the server down.
+
+Recommended smoke eval with `mlx-lm`:
 
 ```bash
 LOCAL_LLM_API_KEY=dummy \
 uv run python -m hangman.local_eval \
   --backend mlx-lm \
   --model mlx-community/Qwen3.5-0.8B-MLX-4bit \
-  --difficulty-mix '[0.3, 0.4, 0.3]' \
+  --difficulty easy \
   --num-examples 6 \
   --rollouts-per-example 2 \
   --max-concurrent 1
 ```
 
-On the first run, `mlx-lm` may need time to download model weights before the helper sees `http://127.0.0.1:<port>/v1/models`.
+Notes:
 
-If you want to host the server yourself first, use either an OpenAI-compatible local server or the workspace config-driven vLLM path.
+- `LOCAL_LLM_API_KEY=dummy` is only there because the Prime CLI expects an API key variable even for local servers.
+- The first `mlx-lm` run can take a while because it may need to download model weights before `/v1/models` is ready.
+- To test a mixed dataset instead of a single preset, replace `--difficulty easy` with `--difficulty-mix '[0.3, 0.4, 0.3]'`.
 
-Run against a local vLLM server with the dedicated workspace config:
+If you already have an OpenAI-compatible local server running, use the regular eval command instead.
+
+Example with a local vLLM server:
 
 ```bash
 export LOCAL_VLLM_MODEL="Qwen/Qwen3-30B-A3B-Instruct-2507"
 export LOCAL_VLLM_BASE_URL="http://127.0.0.1:8000"
-# Optional if your server enforces auth.
 export LOCAL_VLLM_API_KEY="token"
 
 prime eval run configs/eval/hangman-vllm.toml
 ```
 
-For a one-off local run without the config file, pass the OpenAI-compatible base URL explicitly:
+That config reads `configs/endpoints.vllm.py`, which normalizes a bare host like `http://127.0.0.1:8000` to `/v1` for you.
+
+If you want the fully explicit one-off command instead of the config file:
 
 ```bash
 prime eval run hangman_agent \
@@ -157,27 +164,7 @@ prime eval run hangman_agent \
   -a '{"difficulty_mix":[0.3,0.4,0.3]}'
 ```
 
-`configs/endpoints.vllm.py` normalizes a bare host like `http://127.0.0.1:8000` to `/v1`, so the config-driven path works with the usual vLLM server address.
-
-For a one-off manual local run without the config file, pass the base URL explicitly:
-
-```bash
-LOCAL_LLM_API_KEY=dummy prime eval run hangman_agent \
-  --env-dir-path environments \
-  --model mlx-community/Qwen3.5-0.8B-MLX-4bit \
-  --api-base-url http://127.0.0.1:8080/v1 \
-  --api-key-var LOCAL_LLM_API_KEY \
-  --num-examples 25 \
-  --rollouts-per-example 4 \
-  --max-concurrent 4 \
-  --env-args '{"difficulty_mix":[0.3,0.4,0.3]}' \
-  --state-columns termination_reason,last_outcome,total_reward,rollout_trace \
-  --save-results \
-  --tui \
-  --skip-upload
-```
-
-`mlx-lm` is the best-supported backend in this workspace because it is already included in the root project dependencies. `vllm` is also supported by the helper, but only if the `vllm` CLI is installed in the active environment.
+`mlx-lm` is the easiest local backend in this workspace because it is already included in the root project dependencies. The helper also supports `--backend vllm` if the `vllm` CLI is installed in your environment.
 
 ### Full eval to Hub
 ```bash
