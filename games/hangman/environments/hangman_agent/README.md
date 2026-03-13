@@ -10,7 +10,7 @@ Minimal multi-turn Hangman for Prime/Verifiers. Each rollout starts from a fully
 - Local data: bundled 10000-word TSV lexicon tagged with `easy` / `medium` / `hard` (`hangman_agent/data/lexicon.tsv`), rebuilt with `scripts/build_lexicon.py`
 - Default dataset size: 128 train examples and 128 eval examples per resolved config
 - Default difficulty: `easy` for development-focused iteration
-- Package version: `0.2.9`
+- Package version: `0.2.10`
 
 Rebuild the lexicon with:
 
