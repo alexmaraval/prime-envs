@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
+**/.idea/
 
 # Virtual environments
 .venv
@@ -12,3 +13,6 @@ wheels/
 # outputs from `prime eval run`
 ./outputs
 ./environments/*/outputs
+
+
+secrets.env
