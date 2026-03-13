@@ -329,13 +329,6 @@ def load_environment(
     repeat_density_max: float | None = None,
     allowed_attempts_min: int | None = None,
     allowed_attempts_max: int | None = None,
-    pre_revealed_letters_min: int | None = None,
-    pre_revealed_letters_max: int | None = None,
-    pre_wrong_letters_min: int | None = None,
-    pre_wrong_letters_max: int | None = None,
-    ambiguity_min: int | None = None,
-    ambiguity_max: int | None = None,
-    allow_partial_starts: bool | None = None,
 ) -> vf.Environment:
     generation_config = resolve_generation_config(
         difficulty=difficulty,
@@ -349,13 +342,6 @@ def load_environment(
         repeat_density_max=repeat_density_max,
         allowed_attempts_min=allowed_attempts_min,
         allowed_attempts_max=allowed_attempts_max,
-        pre_revealed_letters_min=pre_revealed_letters_min,
-        pre_revealed_letters_max=pre_revealed_letters_max,
-        pre_wrong_letters_min=pre_wrong_letters_min,
-        pre_wrong_letters_max=pre_wrong_letters_max,
-        ambiguity_min=ambiguity_min,
-        ambiguity_max=ambiguity_max,
-        allow_partial_starts=allow_partial_starts,
     )
     lexicon = filter_lexicon(load_lexicon(), generation_config)
     map_kwargs = {"load_from_cache_file": False, "keep_in_memory": True}

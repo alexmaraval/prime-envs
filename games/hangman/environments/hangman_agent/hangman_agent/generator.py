@@ -11,10 +11,8 @@ from typing import Any, Iterable, Sequence
 from datasets import Dataset
 
 from .game import (
-    build_pattern,
     compute_repeat_density,
     initialize_game_state,
-    normalize_letters,
     normalize_word,
     render_board,
 )
@@ -45,13 +43,6 @@ class GenerationConfig:
     repeat_density_max: float
     allowed_attempts_min: int
     allowed_attempts_max: int
-    pre_revealed_letters_min: int
-    pre_revealed_letters_max: int
-    pre_wrong_letters_min: int
-    pre_wrong_letters_max: int
-    ambiguity_min: int
-    ambiguity_max: int
-    allow_partial_starts: bool
     turn_slack: int
     difficulty_mix: tuple[float, float, float] | None = None
 
@@ -68,13 +59,6 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         repeat_density_max=1.0,
         allowed_attempts_min=8,
         allowed_attempts_max=12,
-        pre_revealed_letters_min=0,
-        pre_revealed_letters_max=0,
-        pre_wrong_letters_min=0,
-        pre_wrong_letters_max=0,
-        ambiguity_min=1,
-        ambiguity_max=10_000,
-        allow_partial_starts=False,
         turn_slack=0,
         difficulty_mix=None,
     ),
@@ -89,13 +73,6 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         repeat_density_max=1.0,
         allowed_attempts_min=5,
         allowed_attempts_max=6,
-        pre_revealed_letters_min=0,
-        pre_revealed_letters_max=0,
-        pre_wrong_letters_min=0,
-        pre_wrong_letters_max=0,
-        ambiguity_min=1,
-        ambiguity_max=10_000,
-        allow_partial_starts=False,
         turn_slack=0,
         difficulty_mix=None,
     ),
@@ -110,13 +87,6 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         repeat_density_max=1.0,
         allowed_attempts_min=4,
         allowed_attempts_max=5,
-        pre_revealed_letters_min=0,
-        pre_revealed_letters_max=0,
-        pre_wrong_letters_min=0,
-        pre_wrong_letters_max=0,
-        ambiguity_min=1,
-        ambiguity_max=10_000,
-        allow_partial_starts=False,
         turn_slack=0,
         difficulty_mix=None,
     ),
@@ -214,13 +184,6 @@ def _build_mixed_generation_config(
         allowed_attempts_max=max(
             preset.allowed_attempts_max for preset in active_presets
         ),
-        pre_revealed_letters_min=0,
-        pre_revealed_letters_max=0,
-        pre_wrong_letters_min=0,
-        pre_wrong_letters_max=0,
-        ambiguity_min=min(preset.ambiguity_min for preset in active_presets),
-        ambiguity_max=max(preset.ambiguity_max for preset in active_presets),
-        allow_partial_starts=False,
         turn_slack=0,
         difficulty_mix=difficulty_mix,
     )
@@ -267,13 +230,6 @@ def resolve_generation_config(
     repeat_density_max: float | None = None,
     allowed_attempts_min: int | None = None,
     allowed_attempts_max: int | None = None,
-    pre_revealed_letters_min: int | None = None,
-    pre_revealed_letters_max: int | None = None,
-    pre_wrong_letters_min: int | None = None,
-    pre_wrong_letters_max: int | None = None,
-    ambiguity_min: int | None = None,
-    ambiguity_max: int | None = None,
-    allow_partial_starts: bool | None = None,
 ) -> GenerationConfig:
     dataset_size = DEFAULT_DATASET_SIZE if int(num_examples) <= 0 else int(num_examples)
     overrides: dict[str, Any] = {
@@ -284,13 +240,6 @@ def resolve_generation_config(
         "repeat_density_max": repeat_density_max,
         "allowed_attempts_min": allowed_attempts_min,
         "allowed_attempts_max": allowed_attempts_max,
-        "pre_revealed_letters_min": pre_revealed_letters_min,
-        "pre_revealed_letters_max": pre_revealed_letters_max,
-        "pre_wrong_letters_min": pre_wrong_letters_min,
-        "pre_wrong_letters_max": pre_wrong_letters_max,
-        "ambiguity_min": ambiguity_min,
-        "ambiguity_max": ambiguity_max,
-        "allow_partial_starts": allow_partial_starts,
     }
     normalized_mix = _coerce_difficulty_mix(difficulty_mix)
     if normalized_mix is not None:
@@ -319,22 +268,7 @@ def resolve_generation_config(
         raise ValueError("word_length_min must be <= word_length_max")
     if resolved.allowed_attempts_min > resolved.allowed_attempts_max:
         raise ValueError("allowed_attempts_min must be <= allowed_attempts_max")
-    if resolved.pre_revealed_letters_min > resolved.pre_revealed_letters_max:
-        raise ValueError("pre_revealed_letters_min must be <= pre_revealed_letters_max")
-    if resolved.pre_wrong_letters_min > resolved.pre_wrong_letters_max:
-        raise ValueError("pre_wrong_letters_min must be <= pre_wrong_letters_max")
-    if resolved.ambiguity_min > resolved.ambiguity_max:
-        raise ValueError("ambiguity_min must be <= ambiguity_max")
-    return replace(
-        resolved,
-        pre_revealed_letters_min=0,
-        pre_revealed_letters_max=0,
-        pre_wrong_letters_min=0,
-        pre_wrong_letters_max=0,
-        allow_partial_starts=False,
-        turn_slack=0,
-        difficulty_mix=None,
-    )
+    return replace(resolved, turn_slack=0, difficulty_mix=None)
 
 
 def load_lexicon() -> tuple[LexiconEntry, ...]:
@@ -377,42 +311,6 @@ def filter_lexicon(
     return tuple(filtered)
 
 
-def word_matches_state(
-    word: str,
-    pattern: Sequence[str],
-    correct_guesses: Iterable[str],
-    incorrect_guesses: Iterable[str],
-) -> bool:
-    normalized = normalize_word(word)
-    if len(normalized) != len(pattern):
-        return False
-
-    correct_set = set(normalize_letters(correct_guesses))
-    incorrect_set = set(normalize_letters(incorrect_guesses))
-    if any(letter in normalized for letter in incorrect_set):
-        return False
-
-    for index, token in enumerate(pattern):
-        if token != "_" and normalized[index] != token:
-            return False
-        if token == "_" and normalized[index] in correct_set:
-            return False
-    return True
-
-
-def matching_candidates(
-    lexicon: Iterable[LexiconEntry],
-    pattern: Sequence[str],
-    correct_guesses: Iterable[str],
-    incorrect_guesses: Iterable[str],
-) -> list[LexiconEntry]:
-    return [
-        entry
-        for entry in lexicon
-        if word_matches_state(entry.word, pattern, correct_guesses, incorrect_guesses)
-    ]
-
-
 def _candidate_counts_by_length(
     lexicon: Iterable[LexiconEntry],
 ) -> dict[int, int]:
@@ -424,145 +322,6 @@ def _candidate_counts_by_length(
 
 def _split_seed(split: str, seed: int, index: int) -> int:
     return int(seed) + _SPLIT_OFFSETS.get(split, 500_000) + index
-
-
-def _ambiguity_distance(count: int, minimum: int, maximum: int) -> int:
-    if count < minimum:
-        return minimum - count
-    if count > maximum:
-        return count - maximum
-    return 0
-
-
-def _choose_letters(
-    rng: random.Random, population: Sequence[str], count: int
-) -> list[str]:
-    if count <= 0:
-        return []
-    return sorted(rng.sample(list(population), count))
-
-
-def _attempt_task(
-    entry: LexiconEntry,
-    config: GenerationConfig,
-    lexicon: Sequence[LexiconEntry],
-    seed: int,
-    candidate_counts_by_length: dict[int, int] | None = None,
-) -> dict[str, Any] | None:
-    rng = random.Random(seed)
-    pre_revealed_letters: list[str] = []
-    pre_wrong_letters: list[str] = []
-    pattern = build_pattern(entry.word, pre_revealed_letters)
-    if config.allowed_attempts_min > config.allowed_attempts_max:
-        return None
-    turns_remaining = rng.randint(config.allowed_attempts_min, config.allowed_attempts_max)
-    remaining_attempts = turns_remaining
-
-    # Fully hidden starts make ambiguity depend only on the filtered lexicon's
-    # word-length histogram, so avoid an O(len(lexicon)) scan per sampled task.
-    if not pre_revealed_letters and not pre_wrong_letters and candidate_counts_by_length:
-        candidate_count = candidate_counts_by_length.get(entry.word_length, 0)
-    else:
-        candidates = matching_candidates(
-            lexicon=lexicon,
-            pattern=pattern,
-            correct_guesses=pre_revealed_letters,
-            incorrect_guesses=pre_wrong_letters,
-        )
-        candidate_count = len(candidates)
-    if candidate_count <= 0:
-        return None
-
-    return {
-        "secret_word": entry.word,
-        "frequency_tier": entry.frequency_tier,
-        "difficulty": config.difficulty,
-        "remaining_attempts": remaining_attempts,
-        "turns_remaining": turns_remaining,
-        "pre_revealed_letters": pre_revealed_letters,
-        "pre_wrong_letters": pre_wrong_letters,
-        "candidate_count": candidate_count,
-        "word_length": entry.word_length,
-        "distinct_letter_count": entry.distinct_letter_count,
-        "repeat_density": entry.repeat_density,
-        "seed": seed,
-        "config": {
-            "difficulty": config.difficulty,
-            "word_length_min": config.word_length_min,
-            "word_length_max": config.word_length_max,
-            "frequency_tiers": list(config.frequency_tiers),
-            "repeat_density_min": config.repeat_density_min,
-            "repeat_density_max": config.repeat_density_max,
-            "allowed_attempts_min": config.allowed_attempts_min,
-            "allowed_attempts_max": config.allowed_attempts_max,
-            "pre_revealed_letters_min": config.pre_revealed_letters_min,
-            "pre_revealed_letters_max": config.pre_revealed_letters_max,
-            "pre_wrong_letters_min": config.pre_wrong_letters_min,
-            "pre_wrong_letters_max": config.pre_wrong_letters_max,
-            "ambiguity_min": config.ambiguity_min,
-            "ambiguity_max": config.ambiguity_max,
-            "allow_partial_starts": config.allow_partial_starts,
-            "turn_slack": config.turn_slack,
-        },
-    }
-
-
-def sample_task(
-    config: GenerationConfig,
-    lexicon: Sequence[LexiconEntry],
-    split: str,
-    index: int,
-    candidate_counts_by_length: dict[int, int] | None = None,
-) -> dict[str, Any]:
-    seed = _split_seed(split, config.seed, index)
-    rng = random.Random(seed)
-    best_task: dict[str, Any] | None = None
-    best_distance: int | None = None
-
-    for offset in range(256):
-        entry = lexicon[rng.randrange(len(lexicon))]
-        task = _attempt_task(
-            entry,
-            config,
-            lexicon,
-            seed + offset,
-            candidate_counts_by_length=candidate_counts_by_length,
-        )
-        if task is None:
-            continue
-
-        distance = _ambiguity_distance(
-            task["candidate_count"], config.ambiguity_min, config.ambiguity_max
-        )
-        if best_task is None or best_distance is None:
-            best_task = task
-            best_distance = distance
-        else:
-            current_key = (
-                distance,
-                abs(task["candidate_count"] - config.ambiguity_min),
-                task["secret_word"],
-                tuple(task["pre_revealed_letters"]),
-                tuple(task["pre_wrong_letters"]),
-            )
-            best_key = (
-                best_distance,
-                abs(best_task["candidate_count"] - config.ambiguity_min),
-                best_task["secret_word"],
-                tuple(best_task["pre_revealed_letters"]),
-                tuple(best_task["pre_wrong_letters"]),
-            )
-            if current_key < best_key:
-                best_task = task
-                best_distance = distance
-
-        if distance == 0:
-            break
-
-    if best_task is None:
-        raise RuntimeError("failed to generate a valid task")
-
-    return best_task
 
 
 def build_records(
@@ -629,13 +388,6 @@ def build_records(
                 "repeat_density_max": config.repeat_density_max,
                 "allowed_attempts_min": config.allowed_attempts_min,
                 "allowed_attempts_max": config.allowed_attempts_max,
-                "pre_revealed_letters_min": config.pre_revealed_letters_min,
-                "pre_revealed_letters_max": config.pre_revealed_letters_max,
-                "pre_wrong_letters_min": config.pre_wrong_letters_min,
-                "pre_wrong_letters_max": config.pre_wrong_letters_max,
-                "ambiguity_min": config.ambiguity_min,
-                "ambiguity_max": config.ambiguity_max,
-                "allow_partial_starts": config.allow_partial_starts,
                 "turn_slack": config.turn_slack,
             },
         }

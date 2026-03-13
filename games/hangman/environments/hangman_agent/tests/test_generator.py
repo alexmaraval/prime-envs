@@ -25,7 +25,7 @@ class GeneratorTests(unittest.TestCase):
     def test_presets_resolve_to_expected_defaults(self) -> None:
         config = resolve_generation_config(difficulty="hard", seed=7, num_examples=4)
         self.assertEqual(config.allowed_attempts_max, 5)
-        self.assertEqual(config.pre_revealed_letters_max, 0)
+        self.assertEqual(config.turn_slack, 0)
         self.assertIn("hard", config.frequency_tiers)
 
     def test_easy_is_the_default_generation_preset(self) -> None:
@@ -88,7 +88,7 @@ class GeneratorTests(unittest.TestCase):
         record = build_records(config, lexicon, split="train")[0]
         self.assertEqual(record["info"]["pre_revealed_letters"], [])
         self.assertEqual(record["info"]["pre_wrong_letters"], [])
-        self.assertFalse(config.allow_partial_starts)
+        self.assertNotIn("ambiguity_min", record["info"]["config"])
 
     def test_default_easy_generation_has_word_variety(self) -> None:
         config = resolve_generation_config(difficulty="easy", seed=5, num_examples=12)
@@ -96,6 +96,12 @@ class GeneratorTests(unittest.TestCase):
         records = build_records(config, lexicon, split="train")
         words = {record["info"]["secret_word"] for record in records}
         self.assertGreater(len(words), 1)
+
+    def test_removed_generation_knobs_raise_type_error(self) -> None:
+        with self.assertRaises(TypeError):
+            resolve_generation_config(**{"ambiguity_min": 1})
+        with self.assertRaises(TypeError):
+            resolve_generation_config(**{"allow_partial_starts": True})
 
     def test_difficulty_mix_respects_requested_proportions(self) -> None:
         config = resolve_generation_config(
@@ -122,8 +128,6 @@ class GeneratorTests(unittest.TestCase):
             difficulty="easy",
             seed=5,
             num_examples=12,
-            ambiguity_min=1,
-            ambiguity_max=8,
         )
         lexicon = filter_lexicon(load_lexicon(), config)[:2]
         records = build_records(config, lexicon, split="train")

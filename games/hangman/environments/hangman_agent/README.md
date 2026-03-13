@@ -245,7 +245,6 @@ That adds rollout-level state fields to the saved records so you can inspect how
 | `frequency_tiers` | `Sequence[str] \| str \| None` | preset | Allowed lexicon tiers. |
 | `repeat_density_min` / `repeat_density_max` | `float \| None` | preset | Override repeated-letter density range. |
 | `allowed_attempts_min` / `allowed_attempts_max` | `int \| None` | preset | Override the wrong-guess budget before the hang reaches 100%. |
-| `ambiguity_min` / `ambiguity_max` | `int \| None` | preset | Target candidate-count band for the visible board. |
 
 ## Metrics
 

@@ -49,6 +49,12 @@ class EnvironmentTests(unittest.TestCase):
         self.assertIsInstance(env, HangmanEnv)
         self.assertEqual(env.generation_config.difficulty, "easy")
 
+    def test_load_environment_rejects_removed_generation_knobs(self) -> None:
+        with self.assertRaises(TypeError):
+            load_environment(**{"ambiguity_min": 1})
+        with self.assertRaises(TypeError):
+            load_environment(**{"allow_partial_starts": True})
+
     def test_load_environment_returns_multiturn_env(self) -> None:
         env = load_environment(difficulty="easy", seed=3, num_examples=3)
         self.assertIsInstance(env, HangmanEnv)
