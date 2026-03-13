@@ -22,3 +22,5 @@ environments/*/outputs/
 
 # Generated Prime environment metadata
 environments/*/.prime/.env-metadata.json
+
+secrets.env
