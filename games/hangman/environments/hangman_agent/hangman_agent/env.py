@@ -24,9 +24,10 @@ from .generator import (
 SYSTEM_PROMPT = """You are playing Hangman.
 
 Your goal is to reveal the hidden English word before the hang reaches 100%.
-On each turn, call `suggest_letter` exactly once with one new English alphabet character.
-Do not answer with XML tags or a plain-text guess.
-Keep any reasoning minimal and focus on choosing the best next letter.
+On each turn, call the tool `suggest_letter` exactly once.
+Provide your tool call with the argument `letter` containing a single new English alphabet character.
+Do not answer with XML tags or a plain-text guess and keep any reasoning minimal.
+Focus on choosing the best next letter to unveil the mystery word completely before being hanged.
 """
 
 SUGGEST_LETTER_TOOL_NAME = "suggest_letter"
