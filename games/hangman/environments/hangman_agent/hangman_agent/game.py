@@ -14,11 +14,11 @@ OUTCOME_REPEAT = "repeat"
 OUTCOME_INVALID_ACTION = "invalid_action"
 OUTCOME_SOLVED = "solved"
 
+MAX_WRONG_GUESSES = 12
 TERMINATION_SOLVED = "solved"
-TERMINATION_UNWINNABLE_BY_ATTEMPTS = "unwinnable_by_attempts"
-TERMINATION_UNWINNABLE_BY_TURNS = "unwinnable_by_turns"
-TERMINATION_ATTEMPTS_EXHAUSTED = "attempts_exhausted"
-TERMINATION_TURNS_EXHAUSTED = "turns_exhausted"
+TERMINATION_MAX_WRONG_GUESSES = "wrong_guesses_exhausted"
+TERMINATION_HANGED = TERMINATION_MAX_WRONG_GUESSES
+TERMINATION_TURNS_EXHAUSTED = TERMINATION_MAX_WRONG_GUESSES
 TERMINATION_TOO_MANY_INVALID_ACTIONS = "too_many_invalid_actions"
 
 REWARD_COMPONENT_KEYS = (
@@ -55,8 +55,8 @@ def _already_guessed_letters(state: Mapping[str, Any]) -> list[str]:
 def _termination_feedback(reason: str | None) -> str | None:
     if reason == TERMINATION_SOLVED:
         return "Game over: the word is solved."
-    if reason == TERMINATION_TURNS_EXHAUSTED:
-        return "Game over: the hang reached 100%."
+    if reason == TERMINATION_MAX_WRONG_GUESSES:
+        return f"Game over: {MAX_WRONG_GUESSES} wrong guesses were used."
     if reason == TERMINATION_TOO_MANY_INVALID_ACTIONS:
         return "Game over: too many invalid actions were made."
     return None
@@ -76,10 +76,9 @@ def _position_word(count: int) -> str:
 
 
 def _hanged_percentage(state: Mapping[str, Any]) -> int:
-    initial_turns = max(1, int(state["initial_turns"]))
-    turns_remaining = max(0, int(state["turns_remaining"]))
-    turns_used = max(0, initial_turns - turns_remaining)
-    percentage = round((100 * turns_used) / initial_turns)
+    max_wrong_guesses = max(1, int(state["max_wrong_guesses"]))
+    wrong_guesses_used = max(0, int(state["wrong_guesses_used"]))
+    percentage = round((100 * wrong_guesses_used) / max_wrong_guesses)
     return max(0, min(100, int(percentage)))
 
 
@@ -136,7 +135,6 @@ def render_board(state: Mapping[str, Any], reveal_word: bool = False) -> str:
         f"word: {word_tokens}",
         f"wrong letters: {format_letters(state['incorrect_guesses'])}",
         f"hanged: {_hanged_percentage(state)}%",
-        f"turns remaining: {int(state['turns_remaining'])}",
     ]
     if reveal_word and state.get("termination_reason") != TERMINATION_SOLVED:
         lines.append(f"answer: {state['secret_word']}")
@@ -152,8 +150,7 @@ def task_to_info(task: Mapping[str, Any]) -> dict[str, Any]:
         "secret_word": normalize_word(str(task["secret_word"])),
         "frequency_tier": str(task["frequency_tier"]),
         "difficulty": str(task["difficulty"]),
-        "remaining_attempts": int(task["remaining_attempts"]),
-        "turns_remaining": int(task["turns_remaining"]),
+        "max_wrong_guesses": int(task.get("max_wrong_guesses", MAX_WRONG_GUESSES)),
         "pre_revealed_letters": normalize_letters(task.get("pre_revealed_letters", [])),
         "pre_wrong_letters": normalize_letters(task.get("pre_wrong_letters", [])),
         "candidate_count": int(task["candidate_count"]),
@@ -183,7 +180,10 @@ def initialize_game_state(task_info: Mapping[str, Any]) -> dict[str, Any]:
     if initial_hidden_positions <= 0:
         raise ValueError("task must not start already solved")
 
-    initial_turns = max(1, int(info["turns_remaining"]))
+    max_wrong_guesses = max(1, int(info["max_wrong_guesses"]))
+    initial_wrong_guesses_used = len(incorrect_guesses)
+    if initial_wrong_guesses_used >= max_wrong_guesses:
+        raise ValueError("task must not start already exhausted")
 
     return {
         "secret_word": secret_word,
@@ -191,10 +191,10 @@ def initialize_game_state(task_info: Mapping[str, Any]) -> dict[str, Any]:
         "correct_guesses": correct_guesses,
         "incorrect_guesses": incorrect_guesses,
         "all_guesses_in_order": [],
-        "turns_remaining": initial_turns,
+        "max_wrong_guesses": max_wrong_guesses,
+        "wrong_guesses_used": initial_wrong_guesses_used,
         "revealed_pattern": revealed_pattern,
         "initial_hidden_positions": initial_hidden_positions,
-        "initial_turns": initial_turns,
         "last_outcome": OUTCOME_START,
         "last_guess": None,
         "last_reward": 0.0,
@@ -208,7 +208,7 @@ def initialize_game_state(task_info: Mapping[str, Any]) -> dict[str, Any]:
         "num_wrong_new_guesses": 0,
         "num_repeated_guesses": 0,
         "num_invalid_outputs": 0,
-        "max_invalid_outputs": max(6, initial_turns * 2),
+        "max_invalid_outputs": max(6, max_wrong_guesses * 2),
         "positions_revealed": 0,
     }
 
@@ -236,8 +236,8 @@ def termination_reason(state: Mapping[str, Any]) -> str | None:
         state.get("max_invalid_outputs", 0)
     ):
         return TERMINATION_TOO_MANY_INVALID_ACTIONS
-    if int(state["turns_remaining"]) <= 0:
-        return TERMINATION_TURNS_EXHAUSTED
+    if int(state["wrong_guesses_used"]) >= int(state["max_wrong_guesses"]):
+        return TERMINATION_MAX_WRONG_GUESSES
     return None
 
 
@@ -311,7 +311,7 @@ def apply_guess(
     feedback_message = ""
 
     if parsed_guess.guess in guessed_before:
-        state["turns_remaining"] = max(0, int(state["turns_remaining"]) - 1)
+        state["wrong_guesses_used"] += 1
         state["num_repeated_guesses"] += 1
         state["all_guesses_in_order"].append(parsed_guess.guess)
         outcome = OUTCOME_REPEAT
@@ -344,7 +344,7 @@ def apply_guess(
                 [*state["incorrect_guesses"], parsed_guess.guess]
             )
             state["all_guesses_in_order"].append(parsed_guess.guess)
-        state["turns_remaining"] = max(0, int(state["turns_remaining"]) - 1)
+        state["wrong_guesses_used"] += 1
         state["num_wrong_new_guesses"] += 1
         outcome = OUTCOME_WRONG
         feedback_message = f"Accepted: {parsed_guess.guess} is not in the word."

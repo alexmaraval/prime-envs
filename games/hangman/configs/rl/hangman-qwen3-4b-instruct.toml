@@ -1,17 +1,17 @@
-model = "Qwen/Qwen3-30B-A3B-Thinking-2507"
-max_steps = 500
-batch_size = 256
+model = "Qwen/Qwen3-4B-Instruct-2507"
+max_steps = 1000
+batch_size = 512
 rollouts_per_example = 8
 learning_rate = 1e-5
 lora_alpha = 16
 oversampling_factor = 1.5
-trajectory_strategy = "branching"
+#trajectory_strategy = "branching"
 max_async_level = 2
 env_file = ["../../secrets.env"]
 
 [sampling]
-max_tokens = 1024
-temperature = 0.6
+max_tokens = 512
+temperature = 1.0
 
 # Push `alex-maraval/hangman_agent` version `0.2.10` before launching this run.
 # `difficulty_mix` is an env-native feature, and `0.2.x` adds hosted-run parsing for bracketed string inputs.
@@ -21,7 +21,7 @@ args = { num_examples = 10000, seed = 11, difficulty_mix = [0.3, 0.4, 0.3] }
 
 [wandb]
 project = "hangman"
-name = "qwen3-30b-a3b-thinking-hangman-v0.2.10"
+name = "qwen3-4b-instruct-hangman-v0.2.10"
 entity = "maraval-alexandre"
 
 [eval]
@@ -32,7 +32,7 @@ eval_base_model = true
 
 [[eval.env]]
 id = "alex-maraval/hangman_agent"
-args = { num_examples = 24, seed = 111, difficulty_mix = [0.3, 0.4, 0.3] }
+args = { num_examples = 25, seed = 111, difficulty_mix = [0.3, 0.4, 0.3] }
 
 [val]
 num_examples = 25

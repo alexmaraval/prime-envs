@@ -11,6 +11,7 @@ from typing import Any, Iterable, Sequence
 from datasets import Dataset
 
 from .game import (
+    MAX_WRONG_GUESSES,
     compute_repeat_density,
     initialize_game_state,
     normalize_word,
@@ -57,8 +58,8 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         frequency_tiers=("easy",),
         repeat_density_min=0.0,
         repeat_density_max=1.0,
-        allowed_attempts_min=8,
-        allowed_attempts_max=12,
+        allowed_attempts_min=MAX_WRONG_GUESSES,
+        allowed_attempts_max=MAX_WRONG_GUESSES,
         turn_slack=0,
         difficulty_mix=None,
     ),
@@ -71,8 +72,8 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         frequency_tiers=("medium",),
         repeat_density_min=0.0,
         repeat_density_max=1.0,
-        allowed_attempts_min=5,
-        allowed_attempts_max=6,
+        allowed_attempts_min=MAX_WRONG_GUESSES,
+        allowed_attempts_max=MAX_WRONG_GUESSES,
         turn_slack=0,
         difficulty_mix=None,
     ),
@@ -85,8 +86,8 @@ PRESET_CONFIGS: dict[str, GenerationConfig] = {
         frequency_tiers=("hard",),
         repeat_density_min=0.0,
         repeat_density_max=1.0,
-        allowed_attempts_min=4,
-        allowed_attempts_max=5,
+        allowed_attempts_min=MAX_WRONG_GUESSES,
+        allowed_attempts_max=MAX_WRONG_GUESSES,
         turn_slack=0,
         difficulty_mix=None,
     ),
@@ -178,12 +179,8 @@ def _build_mixed_generation_config(
         frequency_tiers=ordered_tiers,
         repeat_density_min=min(preset.repeat_density_min for preset in active_presets),
         repeat_density_max=max(preset.repeat_density_max for preset in active_presets),
-        allowed_attempts_min=min(
-            preset.allowed_attempts_min for preset in active_presets
-        ),
-        allowed_attempts_max=max(
-            preset.allowed_attempts_max for preset in active_presets
-        ),
+        allowed_attempts_min=MAX_WRONG_GUESSES,
+        allowed_attempts_max=MAX_WRONG_GUESSES,
         turn_slack=0,
         difficulty_mix=difficulty_mix,
     )
@@ -268,7 +265,13 @@ def resolve_generation_config(
         raise ValueError("word_length_min must be <= word_length_max")
     if resolved.allowed_attempts_min > resolved.allowed_attempts_max:
         raise ValueError("allowed_attempts_min must be <= allowed_attempts_max")
-    return replace(resolved, turn_slack=0, difficulty_mix=None)
+    return replace(
+        resolved,
+        allowed_attempts_min=MAX_WRONG_GUESSES,
+        allowed_attempts_max=MAX_WRONG_GUESSES,
+        turn_slack=0,
+        difficulty_mix=None,
+    )
 
 
 def load_lexicon() -> tuple[LexiconEntry, ...]:
@@ -362,7 +365,6 @@ def build_records(
 
     def build_task(
         entry: LexiconEntry,
-        turns_remaining: int,
         seed: int,
         candidate_count: int,
     ) -> dict[str, Any]:
@@ -370,8 +372,7 @@ def build_records(
             "secret_word": entry.word,
             "frequency_tier": entry.frequency_tier,
             "difficulty": config.difficulty,
-            "remaining_attempts": turns_remaining,
-            "turns_remaining": turns_remaining,
+            "max_wrong_guesses": MAX_WRONG_GUESSES,
             "pre_revealed_letters": [],
             "pre_wrong_letters": [],
             "candidate_count": candidate_count,
@@ -393,14 +394,7 @@ def build_records(
         }
 
     candidate_counts = _candidate_counts_by_length(lexicon)
-    turn_values = list(
-        range(config.allowed_attempts_min, config.allowed_attempts_max + 1)
-    )
-    combinations = [
-        (entry, turns_remaining)
-        for entry in lexicon
-        for turns_remaining in turn_values
-    ]
+    combinations = list(lexicon)
     if not combinations:
         raise RuntimeError("failed to generate any records for the requested config")
     rng = random.Random(_split_seed(split, config.seed, config.dataset_size))
@@ -409,12 +403,11 @@ def build_records(
     records: list[dict[str, Any]] = []
     for sample_index in range(config.dataset_size):
         if sample_index < len(combinations):
-            entry, turns_remaining = combinations[sample_index]
+            entry = combinations[sample_index]
         else:
-            entry, turns_remaining = combinations[rng.randrange(len(combinations))]
+            entry = combinations[rng.randrange(len(combinations))]
         task = build_task(
             entry=entry,
-            turns_remaining=turns_remaining,
             seed=_split_seed(split, config.seed, sample_index),
             candidate_count=candidate_counts.get(entry.word_length, 0),
         )

@@ -161,19 +161,17 @@ class EnvironmentTests(unittest.TestCase):
         }
 
         asyncio.run(env.setup_state(state))
-        starting_turns = state["turns_remaining"]
         response_messages = asyncio.run(
             env.env_response(prompt + state["trajectory"][0]["completion"], state)
         )
 
-        self.assertEqual(response_messages[-2]["role"], "user")
-        self.assertIn("did not call", response_messages[-2]["content"].lower())
         self.assertEqual(response_messages[-1]["role"], "user")
-        self.assertEqual(state["turns_remaining"], starting_turns)
+        self.assertEqual(state["wrong_guesses_used"], 0)
         self.assertEqual(state["last_outcome"], "invalid_action")
         self.assertEqual(state["last_reward"], -0.05)
         self.assertIn("suggest_letter", state["last_feedback"])
         self.assertIn("unchanged", state["last_feedback"].lower())
+        self.assertIn("hanged: 0%", response_messages[-1]["content"])
 
     def test_repeat_tool_feedback_explains_prior_guess(self) -> None:
         env = load_environment(difficulty="easy", seed=9, num_examples=1)
@@ -182,10 +180,9 @@ class EnvironmentTests(unittest.TestCase):
                 "secret_word": "APPLE",
                 "frequency_tier": "common",
                 "difficulty": "easy",
-                "turns_remaining": 6,
                 "pre_revealed_letters": ["A"],
                 "pre_wrong_letters": ["Q"],
-                "remaining_attempts": 6,
+                "max_wrong_guesses": 12,
                 "candidate_count": 3,
                 "word_length": 5,
                 "distinct_letter_count": 4,
@@ -218,7 +215,7 @@ class EnvironmentTests(unittest.TestCase):
         self.assertEqual(tool_payload["outcome"], "repeat")
         self.assertIn("already tried as a correct letter", tool_payload["message"])
         self.assertIn("wrong letters: Q", response_messages[-1]["content"])
-        self.assertIn("turns remaining: 5", response_messages[-1]["content"])
+        self.assertNotIn("turns remaining:", response_messages[-1]["content"])
         self.assertIn("hanged: 17%", response_messages[-1]["content"])
 
 

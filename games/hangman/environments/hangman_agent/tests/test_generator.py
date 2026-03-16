@@ -24,14 +24,14 @@ class GeneratorTests(unittest.TestCase):
 
     def test_presets_resolve_to_expected_defaults(self) -> None:
         config = resolve_generation_config(difficulty="hard", seed=7, num_examples=4)
-        self.assertEqual(config.allowed_attempts_max, 5)
+        self.assertEqual(config.allowed_attempts_max, 12)
         self.assertEqual(config.turn_slack, 0)
         self.assertIn("hard", config.frequency_tiers)
 
     def test_easy_is_the_default_generation_preset(self) -> None:
         config = resolve_generation_config(seed=7, num_examples=4)
         self.assertEqual(config.difficulty, "easy")
-        self.assertEqual(config.allowed_attempts_min, 8)
+        self.assertEqual(config.allowed_attempts_min, 12)
         self.assertEqual(config.allowed_attempts_max, 12)
 
     def test_difficulty_mix_normalizes_weights(self) -> None:
@@ -81,6 +81,7 @@ class GeneratorTests(unittest.TestCase):
             self.assertEqual(record["prompt"][0]["content"], render_board(state))
             self.assertIn("word: _", record["prompt"][0]["content"])
             self.assertIn("wrong letters: -", record["prompt"][0]["content"])
+            self.assertEqual(record["info"]["max_wrong_guesses"], 12)
 
     def test_easy_games_start_fully_hidden(self) -> None:
         config = resolve_generation_config(difficulty="easy", seed=5, num_examples=1)
@@ -134,8 +135,7 @@ class GeneratorTests(unittest.TestCase):
         unique_keys = {
             (
                 record["info"]["secret_word"],
-                record["info"]["turns_remaining"],
-                record["info"]["remaining_attempts"],
+                record["info"]["max_wrong_guesses"],
             )
             for record in records
         }

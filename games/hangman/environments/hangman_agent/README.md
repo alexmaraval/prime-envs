@@ -10,7 +10,7 @@ Minimal multi-turn Hangman for Prime/Verifiers. Each rollout starts from a fully
 - Local data: bundled 10000-word TSV lexicon tagged with `easy` / `medium` / `hard` (`hangman_agent/data/lexicon.tsv`), rebuilt with `scripts/build_lexicon.py`
 - Default dataset size: 128 train examples and 128 eval examples per resolved config
 - Default difficulty: `easy` for development-focused iteration
-- Package version: `0.2.10`
+- Package version: `0.2.11`
 
 Rebuild the lexicon with:
 
@@ -27,7 +27,7 @@ Rules:
 - `letter` must be exactly one ASCII alphabetic character
 - missing tool calls, malformed tool arguments, and non-letter payloads receive a small deterministic penalty
 - invalid tool usage repeats the same board with explicit feedback and does not change the board
-- repeated guesses are accepted but count as wasted turns; the feedback says whether that letter was already known correct or wrong
+- repeated guesses are accepted but count as wasted wrong guesses; the feedback says whether that letter was already known correct or wrong
 - reward never depends on assistant free-text content
 
 The model sees a plain-text board like:
@@ -35,8 +35,7 @@ The model sees a plain-text board like:
 ```text
 word: _ P P _ E
 wrong letters: B, C, D, I, M
-hanged: 38%
-turns remaining: 5
+hanged: 42%
 ```
 
 The hidden word is only revealed after termination.
@@ -67,7 +66,7 @@ Tasks are generated deterministically from a curated local English lexicon with 
 Generation controls:
 
 - difficulty tags (`easy`, `medium`, `hard`)
-- allowed-attempt range
+- fixed wrong-guess budget of `12` per rollout
 - optional `difficulty_mix` weights in `easy,medium,hard` order for mixed-difficulty datasets
 - deterministic `seed`
 

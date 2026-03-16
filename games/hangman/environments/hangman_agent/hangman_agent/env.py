@@ -23,15 +23,15 @@ from .generator import (
 
 SYSTEM_PROMPT = """You are playing Hangman.
 
-Your goal is to reveal the hidden English word before the hang reaches 100%.
+Your goal is to reveal the hidden English word before you use 12 wrong guesses.
 On each turn, call the tool `suggest_letter` exactly once.
 Provide your tool call with the argument `letter` containing a single new English alphabet character.
 Do not answer with XML tags or a plain-text guess and keep any reasoning minimal.
-Focus on choosing the best next letter to unveil the mystery word completely before being hanged.
+Focus on choosing the best next letter to unveil the mystery word completely before you run out of wrong guesses.
 """
 
 SUGGEST_LETTER_TOOL_NAME = "suggest_letter"
-MAX_MODEL_TURNS = 64
+MAX_MODEL_TURNS = 10_000
 
 
 def suggest_letter(letter: str) -> str:
