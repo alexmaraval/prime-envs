@@ -4,6 +4,10 @@ This repository is a high-level workspace for developing multiple Prime/Verifier
 
 The root of this repo is intentionally lightweight. It exists to group related environment workspaces in one place rather than act as a single installable package.
 
+## Disclaimer
+
+All environments in this repository are vibe-coded in collaboration with Codex.
+
 ## Repository Layout
 
 Typical structure:

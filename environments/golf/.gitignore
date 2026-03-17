@@ -1,0 +1,23 @@
+.DS_Store
+
+# Local Prime metadata
+.prime/.env-metadata.json
+
+# Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Generated evaluation outputs
+outputs/
+
+# Local logs
+*.log

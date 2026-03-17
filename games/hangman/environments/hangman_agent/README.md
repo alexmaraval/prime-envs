@@ -90,24 +90,25 @@ uv run python -c "from hangman_agent import load_environment; env = load_environ
 
 ## Running Evals
 
-### Hosted eval with `gpt-4.1-mini`
+### Hosted eval with `gpt-4o-nano`
 
 From the workspace root, load your keys and run a small smoke eval against OpenAI:
 
 ```bash
-set -a; source secrets.env >/dev/null 2>&1
+set -a; source secrets.env >/dev/null 2&>1
 
-prime eval run hangman_agent \
-  -m gpt-4.1-mini \
-  -b https://api.openai.com/v1 \
-  -k OPENAI_API_KEY \
-  -n 6 \
-  -r 2 \
-  -a '{"difficulty_mix":[0.3,0.4,0.3]}' \
-  -C 'termination_reason,last_outcome,total_reward,rollout_trace' \
-  -s \
-  --skip-upload \
-  -d
+uv run prime eval run hangman_agent \
+  --model gpt-4o-nano \
+  --api-base-url https://api.openai.com/v1 \
+  --api-key-var OPENAI_API_KEY \
+  --num-examples 25 \
+  --rollouts-per-example 4 \
+  --max-concurrent 1 \
+  --sampling-args '{"max_tokens":16384,"temperature":0.7}' \
+  --env-args '{"difficulty_mix":[0.3,0.4,0.3]}' \
+  --state-columns termination_reason,last_outcome,total_reward,rollout_trace \
+  --save-results \
+  --tui
 ```
 
 This uses the mixed-difficulty generator added in `0.2.x` and saves full rollout traces locally.
@@ -125,10 +126,13 @@ LOCAL_LLM_API_KEY=dummy \
 uv run python -m hangman.local_eval \
   --backend mlx-lm \
   --model mlx-community/Qwen3.5-0.8B-MLX-4bit \
-  --difficulty easy \
-  --num-examples 6 \
-  --rollouts-per-example 2 \
-  --max-concurrent 1
+  --num-examples 25 \
+  --rollouts-per-example 4 \
+  --max-concurrent 1 \
+  --sampling-args '{"max_tokens":16384,"temperature":0.7}' \
+  --env-args '{"difficulty_mix":[0.3,0.4,0.3]}' \
+  --state-columns termination_reason,last_outcome,total_reward,rollout_trace \
+  --save-results
 ```
 
 Notes:
@@ -167,20 +171,22 @@ prime eval run hangman_agent \
 
 ### Full eval to Hub
 ```bash
-set -a; source secrets.env >/dev/null 2>&1
+set -a; source secrets.env >/dev/null 2&>1
 
 uv run prime eval run hangman_agent \
-  --model gpt-4.1-mini \
+  --model gpt-4.1-nano \
   --api-base-url https://api.openai.com/v1 \
   --api-key-var OPENAI_API_KEY \
   --num-examples 25 \
   --rollouts-per-example 4 \
+  --max-concurrent 4 \
+  --sampling-args '{"max_tokens":16384,"temperature":0.7}' \
   --env-args '{"difficulty_mix":[0.3,0.4,0.3]}' \
-  --state-columns 'termination_reason,last_outcome,total_reward,rollout_trace' \
+  --state-columns termination_reason,last_outcome,total_reward,rollout_trace \
   --save-results \
   --tui
 
-RUN_DIR="$(ls -td environments/hangman_agent/outputs/evals/hangman_agent--gpt-4.1-mini/* | head -n1)"
+RUN_DIR="$(ls -td environments/hangman_agent/outputs/evals/hangman_agent--gpt-4.1-nano/* | head -n1)"
 prime eval push "$RUN_DIR"
 
 # push env again to hub
@@ -251,8 +257,8 @@ Completed on 2026-03-10:
 ```bash
 prime env install hangman_agent
 uv run python -m unittest discover -s environments/hangman_agent/tests -v
-set -a; source secrets.env >/dev/null 2>&1; prime eval run hangman_agent -m gpt-4.1-mini -b https://api.openai.com/v1 -k OPENAI_API_KEY -n 6 -r 2 -a '{"difficulty":"easy"}' -C 'termination_reason,last_outcome,total_reward' -s --skip-upload -d
-set -a; source secrets.env >/dev/null 2>&1; prime eval run hangman_agent -m gpt-5-mini -b https://api.openai.com/v1 -k OPENAI_API_KEY -n 6 -r 2 -a '{"difficulty":"hard"}' -C 'termination_reason,last_outcome,total_reward' -s --skip-upload -d
+set -a; source secrets.env >/dev/null 2>&1; prime eval run hangman_agent -m gpt-4.1-nano -b https://api.openai.com/v1 -k OPENAI_API_KEY -n 6 -r 2 -a '{"difficulty":"easy"}' -C 'termination_reason,last_outcome,total_reward' -s --skip-upload -d
+set -a; source secrets.env >/dev/null 2>&1; prime eval run hangman_agent -m gpt-5-nano -b https://api.openai.com/v1 -k OPENAI_API_KEY -n 6 -r 2 -a '{"difficulty":"hard"}' -C 'termination_reason,last_outcome,total_reward' -s --skip-upload -d
 ```
 
 Note: `prime eval run ... -e configs/endpoints.toml -m <endpoint_id>` did not resolve the OpenAI endpoint aliases in this session and instead fell back to the default Pinference base URL. The successful smoke evals therefore passed `-b https://api.openai.com/v1 -k OPENAI_API_KEY` explicitly.

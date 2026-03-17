@@ -22,7 +22,7 @@ args = { num_examples = 10000, seed = 11, difficulty_mix = [0.3, 0.4, 0.3] }
 
 [wandb]
 project = "hangman"
-name = "qwen3-30b-a3b-thinking-hangman-v0.2.10"
+name = "qwen3-30b-a3b-thinking-hangman-v0.2.11"
 entity = "maraval-alexandre"
 
 [eval]
