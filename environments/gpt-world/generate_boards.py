@@ -6,7 +6,7 @@ import random
 from dataclasses import asdict
 from typing import Iterable
 
-from golf_core import DEFAULT_SPECS, GameSpec, shortest_solution, validate_spec
+from gpt_world_core import DEFAULT_SPECS, GameSpec, shortest_solution, validate_spec
 
 
 def playable_cells(boundary: tuple[int, int]) -> tuple[tuple[int, int], ...]:
@@ -114,7 +114,7 @@ def generate_boards(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Generate solvable Golf boards from the predefined templates."
+        description="Generate solvable GPT-World boards from the predefined templates."
     )
     parser.add_argument("--count", type=int, default=8, help="Number of boards to generate.")
     parser.add_argument("--seed", type=int, default=0, help="Random seed.")

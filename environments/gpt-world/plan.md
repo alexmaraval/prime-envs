@@ -1,8 +1,8 @@
-# Golf Environment Plan
+# GPT-World Environment Plan
 
 ## Game Description
 
-This environment is based on the "GPTWorld Golf" notebook from `srush/GPTWorld-Challenge`, adapted into a Prime-compatible task.
+This environment is based on the GPT-World notebook from `srush/GPTWorld-Challenge`, adapted into a Prime-compatible task.
 
 The game is a deterministic pathfinding puzzle played on a hex-style board embedded in a 2D array. The board contains:
 
@@ -114,7 +114,7 @@ Each example record should contain:
 
 ## Implementation Plan
 
-1. Recreate the board simulator in `golf.py` using the notebook's exact transition rules.
+1. Recreate the board simulator in `gpt_world.py` using the notebook's exact transition rules.
 2. Add a deterministic shortest-path solver over `(player_pos, key_collected)` state.
 3. Define a compact dataset of notebook boards plus a few extra boards.
 4. Write prompt rendering that explains the hex movement clearly and prints the board in text form.

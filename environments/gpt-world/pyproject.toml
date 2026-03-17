@@ -1,6 +1,6 @@
 [project]
-name = "golf"
-description = "Multi-turn hex-grid pathfinding environment based on GPTWorld Golf"
+name = "gpt-world"
+description = "Multi-turn hex-grid pathfinding environment based on GPT-World"
 tags = ["games", "planning", "tool-use", "multiturn", "pathfinding"]
 version = "0.1.0"
 requires-python = ">=3.10"
@@ -15,7 +15,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
-include = ["golf.py", "golf_core.py", "README.md", "pyproject.toml"] 
+include = ["gpt_world.py", "gpt_world_core.py", "README.md", "pyproject.toml"]
 
 [tool.verifiers.eval]
 num_examples = 8

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from golf_core import (
+from gpt_world_core import (
     Action,
     DEFAULT_SPECS,
     make_initial_state,
@@ -13,7 +13,7 @@ from golf_core import (
 )
 
 
-class GolfCoreTests(unittest.TestCase):
+class GPTWorldCoreTests(unittest.TestCase):
     def test_parse_action_supports_aliases(self) -> None:
         self.assertEqual(parse_action("dr"), Action.DOWNRIGHT)
         self.assertEqual(parse_action("Pickup"), Action.PICKUP)

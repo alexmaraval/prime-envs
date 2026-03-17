@@ -23,7 +23,7 @@ CELL_STYLES = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Render an HTML viewer for Golf eval rollouts from results.jsonl."
+        description="Render an HTML viewer for GPT-World eval rollouts from results.jsonl."
     )
     parser.add_argument("results_jsonl", type=Path, help="Path to a results.jsonl file")
     parser.add_argument(
@@ -140,7 +140,7 @@ def render_board_svg(board: dict[str, Any]) -> str:
     height = margin * 2 + (len(rows) - 1) * y_step + hex_height
 
     parts = [
-        f'<svg class="board-svg" viewBox="0 0 {width:.1f} {height:.1f}" role="img" aria-label="Golf board">'
+        f'<svg class="board-svg" viewBox="0 0 {width:.1f} {height:.1f}" role="img" aria-label="GPT-World board">'
     ]
     for visual_row_index, row in enumerate(rows):
         row_number = int(row["row_number"])
@@ -295,7 +295,7 @@ def build_html(records: list[dict[str, Any]], source_path: Path) -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Golf Rollouts Viewer</title>
+  <title>GPT-World Rollouts Viewer</title>
   <style>
     :root {{
       color-scheme: light;
@@ -472,7 +472,7 @@ def build_html(records: list[dict[str, Any]], source_path: Path) -> str:
 </head>
 <body>
   <main>
-    <h1>Golf Rollouts Viewer</h1>
+    <h1>GPT-World Rollouts Viewer</h1>
     <p class="lead">{html.escape(str(source_path))}</p>
     <div class="stats">
       <div class="stat">Rollouts: {len(records)}</div>

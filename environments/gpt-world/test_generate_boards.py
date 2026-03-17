@@ -4,7 +4,7 @@ import random
 import unittest
 
 from generate_boards import generate_board_from_template, generate_boards
-from golf_core import DEFAULT_SPECS, shortest_solution
+from gpt_world_core import DEFAULT_SPECS, shortest_solution
 
 
 class GenerateBoardsTests(unittest.TestCase):

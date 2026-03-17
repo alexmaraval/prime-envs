@@ -8,7 +8,7 @@ from datasets import Dataset
 import verifiers as vf
 
 from generate_boards import generate_boards
-from golf_core import (
+from gpt_world_core import (
     Action,
     GameSpec,
     GameState,
@@ -20,7 +20,7 @@ from golf_core import (
     step,
 )
 
-SYSTEM_PROMPT = """You are playing Golf, a deterministic hex-grid pathfinding game.
+SYSTEM_PROMPT = """You are playing GPT-World, a deterministic hex-grid pathfinding game.
 
 Your job is to collect the key and then reach the goal.
 On every turn, call the tool `play_move` exactly once with one action.
@@ -41,7 +41,7 @@ DEFAULT_GENERATED_DATASET_SIZE = 4096
 
 
 def play_move(action: str) -> str:
-    """Take exactly one Golf action.
+    """Take exactly one GPT-World action.
 
     Args:
         action: One of UR, R, DR, DL, L, UL, Pickup.
@@ -143,7 +143,7 @@ def _format_user_prompt(info: dict[str, Any]) -> str:
     state = _state_from_info(info)
     optimal_num_actions = int(info["optimal_num_actions"])
     return (
-        "Golf board:\n"
+        "GPT-World board:\n"
         f"Reference shortest solution length: {optimal_num_actions} actions.\n\n"
         f"{render_board(state)}"
     )
@@ -187,7 +187,7 @@ def build_rubric() -> vf.Rubric:
     return rubric
 
 
-class GolfEnv(vf.ToolEnv):
+class GPTWorldEnv(vf.ToolEnv):
     def __init__(self, max_turns: int = MAX_MODEL_TURNS, **kwargs):
         super().__init__(tools=[play_move], max_turns=max_turns, **kwargs)
 
@@ -424,7 +424,7 @@ def load_environment(
     if difficulty not in {"all", "easy", "medium", "hard"}:
         raise ValueError("difficulty must be one of: all, easy, medium, hard")
     eval_count = num_examples if eval_examples is None else int(eval_examples)
-    return GolfEnv(
+    return GPTWorldEnv(
         dataset=_make_dataset_builder(
             num_examples=num_examples,
             seed=seed,
@@ -439,7 +439,7 @@ def load_environment(
         ),
         system_prompt=SYSTEM_PROMPT,
         rubric=build_rubric(),
-        env_id="golf",
+        env_id="gpt-world",
         map_kwargs={"load_from_cache_file": False, "keep_in_memory": True},
         max_turns=max_turns,
     )
