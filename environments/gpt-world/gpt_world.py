@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Sequence, cast
+from typing import Any, Literal, Sequence, cast
 
 from openai.types.chat import ChatCompletionAssistantMessageParam
 from datasets import Dataset
@@ -25,6 +25,8 @@ SYSTEM_PROMPT = """You are playing GPT-World, a deterministic hex-grid pathfindi
 Your job is to collect the key and then reach the goal.
 On every turn, call the tool `play_move` exactly once with one action.
 Valid actions are: UR, R, DR, DL, L, UL, Pickup.
+Do not answer with plain text, XML, or a handwritten action. Your response each turn must be a single `play_move` tool call.
+Provide the tool argument as JSON with exactly one field: {"action": "<ACTION>"}.
 
 Important rules:
 - The board is shown again after every turn.
@@ -38,13 +40,14 @@ Keep any reasoning minimal and use the board state you are given each turn.
 PLAY_MOVE_TOOL = "play_move"
 MAX_MODEL_TURNS = 128
 DEFAULT_GENERATED_DATASET_SIZE = 4096
+ActionName = Literal["UR", "R", "DR", "DL", "L", "UL", "Pickup"]
 
 
-def play_move(action: str) -> str:
+def play_move(action: ActionName) -> str:
     """Take exactly one GPT-World action.
 
     Args:
-        action: One of UR, R, DR, DL, L, UL, Pickup.
+        action: Exactly one valid move token. Must be one of UR, R, DR, DL, L, UL, or Pickup.
     """
     return parse_action(action).value
 

@@ -2,7 +2,7 @@
 name = "gpt-world"
 description = "Multi-turn hex-grid pathfinding environment based on GPT-World"
 tags = ["games", "planning", "tool-use", "multiturn", "pathfinding"]
-version = "0.1.0"
+version = "0.1.3"
 requires-python = ">=3.10"
 dependencies = [
     "verifiers>=0.1.10",
@@ -15,7 +15,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
-include = ["gpt_world.py", "gpt_world_core.py", "README.md", "pyproject.toml"]
+include = [
+    "gpt_world.py",
+    "gpt_world_core.py",
+    "generate_boards.py",
+    "README.md",
+    "pyproject.toml",
+]
 
 [tool.verifiers.eval]
 num_examples = 8
