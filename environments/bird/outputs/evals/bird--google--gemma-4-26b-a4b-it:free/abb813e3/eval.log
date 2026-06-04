@@ -1,0 +1,115 @@
+2026-04-27 11:33:43 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve bird (env_args={'split': 'train', 'eval_split': 'val', 'include_evidence': True, 'max_turns': 20}, extra_env_kwargs={})
+2026-04-27 11:33:43 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment bird with env_args={'split': 'train', 'eval_split': 'val', 'include_evidence': True, 'max_turns': 20}
+2026-04-27 11:33:43 - verifiers.utils.env_utils - INFO - Loading environment: bird
+2026-04-27 11:33:43 - verifiers.utils.env_utils - INFO - Using provided args: split=train, max_turns=20, eval_split=val, include_evidence=True
+2026-04-27 11:33:43 - verifiers.utils.env_utils - INFO - Using default args: num_examples=None, seed=0, bird_data_dir=None, max_score_seconds=30.0, max_explore_seconds=5.0, initial_schema_mode='ddl', max_explore_rows=20, scoring_mode='official', sql_result_cache_dir=None, max_describe_sample_rows=3
+2026-04-27 11:33:43 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'bird'
+2026-04-27 11:33:43 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:59355
+2026-04-27 11:33:44 - verifiers.workers.server.env_server.ZMQEnvServer - ERROR - Error processing request 6cf21120893d42a48998d23556350a13: Error code: 401 - {'error': {'message': 'Missing Authentication header', 'code': 401}}
+Traceback (most recent call last):
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/workers/server/zmq_env_server.py", line 116, in _process_request
+    response = await self._handle_run_group(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/workers/server/env_server.py", line 119, in _handle_run_group
+    outputs = await self.env.run_group(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 952, in run_group
+    group_states = await maybe_retry(
+                   ^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 943, in run_group_attempt
+    group_states = await asyncio.gather(*rollout_tasks)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/multiturn_env.py", line 149, in rollout
+    response = await self.get_model_response(state, prompt_messages)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 698, in get_model_response
+    response = await get_model_response_with_messages(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 557, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 619, in get_model_response_with_messages
+    response = await client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2714, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1884, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1669, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.AuthenticationError: Error code: 401 - {'error': {'message': 'Missing Authentication header', 'code': 401}}
+2026-04-27 11:33:44 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-04-27 11:33:44 - verifiers.workers.server.env_server.ZMQEnvServer - ERROR - Error processing request f985d4ef1a354100913f0da10d948e3b: Error code: 401 - {'error': {'message': 'Missing Authentication header', 'code': 401}}
+Traceback (most recent call last):
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/workers/server/zmq_env_server.py", line 116, in _process_request
+    response = await self._handle_run_group(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/workers/server/env_server.py", line 119, in _handle_run_group
+    outputs = await self.env.run_group(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 952, in run_group
+    group_states = await maybe_retry(
+                   ^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 943, in run_group_attempt
+    group_states = await asyncio.gather(*rollout_tasks)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/multiturn_env.py", line 149, in rollout
+    response = await self.get_model_response(state, prompt_messages)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 698, in get_model_response
+    response = await get_model_response_with_messages(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 557, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 619, in get_model_response_with_messages
+    response = await client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2714, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1884, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1669, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.AuthenticationError: Error code: 401 - {'error': {'message': 'Missing Authentication header', 'code': 401}}
+2026-04-27 11:33:44 - verifiers.workers.server.env_server.ZMQEnvServer - ERROR - Error processing request bcb71a7e55194f5bab0baf0ca145bc7d: Error code: 401 - {'error': {'message': 'Missing Authentication header', 'code': 401}}
+Traceback (most recent call last):
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/workers/server/zmq_env_server.py", line 116, in _process_request
+    response = await self._handle_run_group(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/workers/server/env_server.py", line 119, in _handle_run_group
+    outputs = await self.env.run_group(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 952, in run_group
+    group_states = await maybe_retry(
+                   ^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 943, in run_group_attempt
+    group_states = await asyncio.gather(*rollout_tasks)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/multiturn_env.py", line 149, in rollout
+    response = await self.get_model_response(state, prompt_messages)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 698, in get_model_response
+    response = await get_model_response_with_messages(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 557, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/verifiers/envs/environment.py", line 619, in get_model_response_with_messages
+    response = await client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2714, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1884, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexandremaraval/Documents/Projects/prime-envs/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1669, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.AuthenticationError: Error code: 401 - {'error': {'message': 'Missing Authentication header', 'code': 401}}
+2026-04-27 11:33:45 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-04-27 11:33:45 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down

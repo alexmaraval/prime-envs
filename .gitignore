@@ -14,5 +14,11 @@ wheels/
 ./outputs
 ./environments/*/outputs
 
+# local artifacts and benchmark data
+.DS_Store
+*.sqlite
+environments/bird/data/
+environments/bird/.data/
+environments/.bird-data/
 
 secrets.env

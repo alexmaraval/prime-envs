@@ -1,0 +1,11 @@
+2026-04-27 11:17:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve bird (env_args={'split': 'train', 'eval_split': 'val', 'include_evidence': True, 'max_turns': 20}, extra_env_kwargs={})
+2026-04-27 11:17:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment bird with env_args={'split': 'train', 'eval_split': 'val', 'include_evidence': True, 'max_turns': 20}
+2026-04-27 11:17:21 - verifiers.utils.env_utils - INFO - Loading environment: bird
+2026-04-27 11:17:21 - verifiers.utils.env_utils - INFO - Using provided args: include_evidence=True, max_turns=20, split=train, eval_split=val
+2026-04-27 11:17:21 - verifiers.utils.env_utils - INFO - Using default args: initial_schema_mode='ddl', sql_result_cache_dir=None, bird_data_dir=None, max_describe_sample_rows=3, max_score_seconds=30.0, scoring_mode='official', max_explore_rows=20, num_examples=None, seed=0, max_explore_seconds=5.0
+2026-04-27 11:17:21 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'bird'
+2026-04-27 11:17:21 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:59174
+2026-04-27 11:20:11 - verifiers.envs.environment.BIRDSQLEnv - ERROR - Aborted rollout due to ModelError() -> RateLimitError("Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4.1-nano in organization org-HEqTjoH6SJaxE3fajVnStmlq on tokens per min (TPM): Limit 200000, Used 199598, Requested 2643. Please try again in 672ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}")
+2026-04-27 11:20:17 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-04-27 11:20:18 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-04-27 11:20:18 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down

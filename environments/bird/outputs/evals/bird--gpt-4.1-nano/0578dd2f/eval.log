@@ -1,0 +1,10 @@
+2026-04-26 19:43:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Initializing ZMQEnvServer to serve bird (env_args={'split': 'train', 'eval_split': 'val', 'include_evidence': True, 'max_turns': 12, 'initial_schema_mode': 'ddl_with_descriptions'}, extra_env_kwargs={})
+2026-04-26 19:43:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Loading environment bird with env_args={'split': 'train', 'eval_split': 'val', 'include_evidence': True, 'max_turns': 12, 'initial_schema_mode': 'ddl_with_descriptions'}
+2026-04-26 19:43:05 - verifiers.utils.env_utils - INFO - Loading environment: bird
+2026-04-26 19:43:05 - verifiers.utils.env_utils - INFO - Using provided args: initial_schema_mode=ddl_with_descriptions, max_turns=12, eval_split=val, include_evidence=True, split=train
+2026-04-26 19:43:05 - verifiers.utils.env_utils - INFO - Using default args: max_describe_sample_rows=3, bird_data_dir=None, scoring_mode='official', max_score_seconds=30.0, seed=0, max_explore_seconds=5.0, num_examples=None, max_explore_rows=20
+2026-04-26 19:43:05 - verifiers.utils.env_utils - INFO - Successfully loaded environment 'bird'
+2026-04-26 19:43:05 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - ZMQEnvServer started on tcp://127.0.0.1:55137
+2026-04-26 19:43:51 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Received signal SIGTERM, initiating graceful shutdown
+2026-04-26 19:43:51 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Stop event received, shutting down gracefully
+2026-04-26 19:43:51 - verifiers.workers.server.env_server.ZMQEnvServer - INFO - Environment server shut down

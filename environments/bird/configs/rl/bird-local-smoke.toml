@@ -1,0 +1,49 @@
+model = "Qwen/Qwen3-4B-Instruct-2507"
+max_steps = 100
+batch_size = 64
+rollouts_per_example = 4
+learning_rate = 2e-5
+lora_alpha = 16
+oversampling_factor = 1.5
+trajectory_strategy = "branching"
+max_async_level = 1
+env_file = ["../../../../secrets.env", ".env.bird"]
+
+[sampling]
+max_tokens = 1024
+temperature = 1.0
+
+[[env]]
+id = "bird"
+args = { split = "train", eval_split = "val", include_evidence = true, max_turns = 12, num_examples = 512 }
+
+[wandb]
+project = "bird-sql"
+name = "qwen3-4b-bird-local-smoke"
+entity = "maraval-alexandre"
+
+[eval]
+interval = 20
+num_examples = 24
+rollouts_per_example = 1
+eval_base_model = true
+
+[[eval.env]]
+id = "bird"
+args = { split = "train", eval_split = "test", include_evidence = true, max_turns = 12, num_examples = 64 }
+
+[val]
+num_examples = 24
+rollouts_per_example = 1
+interval = 10
+
+[checkpoints]
+interval = 50
+keep_cloud = 2
+
+[adapters]
+interval = 50
+keep_last = 2
+
+# Set BIRD_DATA_DIR in .env.bird or your shell. Example:
+# BIRD_DATA_DIR=/Users/alexandremaraval/Documents/Projects/prime-envs/environments/bird/.data

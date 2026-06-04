@@ -1,0 +1,55 @@
+model = "Qwen/Qwen3-4B-Instruct-2507"
+max_steps = 800
+batch_size = 256
+rollouts_per_example = 8
+learning_rate = 1e-5
+lora_alpha = 16
+oversampling_factor = 2.0
+max_async_level = 2
+env_file = ["../../../../secrets.env", ".env.bird"]
+
+[sampling]
+max_tokens = 2048
+temperature = 1.0
+
+# Push the environment first, then replace this with your Hub id.
+# The remote runtime must provide BIRD_DATA_DIR, for example /mnt/bird.
+[[env]]
+id = "alex-maraval/bird"
+args = { split = "train", eval_split = "val", include_evidence = true, max_turns = 12, num_examples = 9000 }
+
+[wandb]
+project = "bird-sql"
+name = "qwen3-4b-instruct-bird-v0.2.0"
+entity = "maraval-alexandre"
+
+[eval]
+interval = 50
+num_examples = 100
+rollouts_per_example = 1
+eval_base_model = true
+
+[[eval.env]]
+id = "alex-maraval/bird"
+args = { split = "train", eval_split = "test", include_evidence = true, max_turns = 12, num_examples = 200 }
+
+[val]
+num_examples = 100
+rollouts_per_example = 1
+interval = 10
+
+[checkpoints]
+interval = 50
+keep_cloud = 5
+
+[adapters]
+interval = 50
+keep_last = 3
+
+[buffer]
+online_difficulty_filtering = true
+easy_threshold = 1.05
+hard_threshold = 0.05
+easy_fraction = 0.1
+hard_fraction = 0.4
+seed = 42
