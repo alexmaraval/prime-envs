@@ -130,6 +130,7 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
                 {
                     "tool_name": tool_name,
                     "args": args,
+                    "state": state,
                     "timeout": sandbox_command_timeout,
                     "working_dir": working_dir,
                 }
@@ -145,7 +146,13 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
             + [
                 assistant_tool(
                     "execute_bash",
-                    {"cmd": "pwd", "description": "inspect current directory"},
+                    {
+                        "cmd": "pwd",
+                        "description": "inspect current directory",
+                        "state": "model-supplied state is ignored",
+                        "sandbox_command_timeout": 999,
+                        "working_dir": "/tmp",
+                    },
                     "c1",
                 )
             ],
@@ -156,7 +163,7 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
             + [
                 assistant_tool(
                     "search_files",
-                    {"query": "needle", "path": "src"},
+                    {"query": "needle", "path": "src", "working_dir": "/tmp"},
                     "c2",
                 )
             ],
@@ -188,6 +195,10 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
             calls[2]["args"],
             ["self_compaction.py", "--start-line", "3", "--limit", "5"],
         )
+        for call in calls:
+            self.assertIs(call["state"], state)
+            self.assertEqual(call["timeout"], env.sandbox_command_timeout)
+            self.assertEqual(call["working_dir"], env.repo_path)
 
     async def test_submit_ignores_extra_args(self) -> None:
         env = make_env()

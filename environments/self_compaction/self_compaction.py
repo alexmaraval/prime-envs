@@ -776,32 +776,34 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             if target not in updated and source in updated:
                 updated[target] = updated[source]
         allowed = {
-            "execute_bash": {
-                "command",
-                "state",
-                "sandbox_command_timeout",
-                "working_dir",
-            },
-            "search_files": {
-                "pattern",
-                "state",
-                "sandbox_command_timeout",
-                "working_dir",
-            },
-            "read": {
-                "path",
-                "start_line",
-                "limit",
-                "state",
-                "sandbox_command_timeout",
-                "working_dir",
-            },
-            "compact": {"summary", "state"},
-            "submit": {"state"},
+            "execute_bash": {"command"},
+            "search_files": {"pattern"},
+            "read": {"path", "start_line", "limit"},
+            "compact": {"summary"},
+            "submit": set(),
         }.get(tool_name)
         if allowed is None:
             return updated
         return {key: value for key, value in updated.items() if key in allowed}
+
+    def _internal_tool_args(
+        self, tool_name: str, kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
+        state = kwargs.get("state")
+        if tool_name in {
+            "execute_bash",
+            "search_files",
+            "read",
+            "edit_via_str_replace",
+        }:
+            return {
+                "state": state,
+                "sandbox_command_timeout": self.sandbox_command_timeout,
+                "working_dir": self.repo_path,
+            }
+        if tool_name in {"compact", "submit"}:
+            return {"state": state}
+        return {}
 
     async def call_tool(
         self, tool_name: str, tool_args: dict[str, Any], tool_call_id: str, **kwargs: Any
@@ -816,9 +818,9 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         }
         if tool_name not in dispatch:
             return await super().call_tool(tool_name, tool_args, tool_call_id, **kwargs)
-        result = await dispatch[tool_name](
-            **self._compatible_tool_args(tool_name, tool_args)
-        )
+        call_args = self._compatible_tool_args(tool_name, tool_args)
+        call_args.update(self._internal_tool_args(tool_name, kwargs))
+        result = await dispatch[tool_name](**call_args)
         return vf.ToolMessage(role="tool", content=str(result), tool_call_id=tool_call_id)
 
     async def run_tool_script(
@@ -1149,7 +1151,9 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             tool_args = self.update_tool_args(
                 tool_name, tool_args, messages, state, **kwargs
             )
-            tool_message = await self.call_tool(tool_name, tool_args, tool_call_id)
+            tool_message = await self.call_tool(
+                tool_name, tool_args, tool_call_id, state=state
+            )
         except vf.Error:
             raise
         except Exception as exc:
