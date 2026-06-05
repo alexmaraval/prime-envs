@@ -25,11 +25,21 @@ Implement the necessary source-code changes to satisfy the PR description.
 You must interact by issuing exactly one tool call per assistant turn.
 
 Available workflow:
-1. Inspect the repository with `search_files` and focused `execute_bash` commands.
-2. Edit source files with `edit_via_str_replace` or shell commands.
+1. Inspect the repository with `search_files`, `read`, and focused
+   `execute_bash` commands.
+2. Edit source files with `edit_via_str_replace` or focused shell commands.
 3. Reproduce and verify the issue with focused commands.
-4. Call `compact` with a complete summary before final submission.
+4. Call `compact` with a complete summary after useful investigation or changes,
+   usually by turn 25-40, and before final submission.
 5. Call `submit` only after compaction and once your changes are ready.
+
+Available tools:
+- `search_files(pattern: str)`
+- `read(path: str, start_line: int = 1, limit: int = 200)`
+- `execute_bash(command: str)`
+- `edit_via_str_replace(path: str, old_str: str, new_str: str)`
+- `compact(summary: str)`
+- `submit()`
 
 Important boundaries:
 - Modify normal source-code files.
@@ -37,8 +47,8 @@ Important boundaries:
 - Commands run in fresh subshells. Prefix commands with `cd /testbed && ...`
   when needed, or rely on the default repository working directory.
 - Avoid interactive commands.
-- `rg` is often unavailable in these sandboxes. Prefer `search_files`, `find`,
-  `grep -R`, `sed -n`, `head`, and short Python snippets.
+- `rg` is often unavailable in these sandboxes. Prefer `search_files`, `read`,
+  `find`, `grep -R`, `sed -n`, `head`, and short Python snippets.
 - Keep command output bounded. Avoid broad searches through `.venv`,
   `site-packages`, or generated directories.
 - Run focused tests first. Full-suite commands and package installs can time out.
@@ -56,10 +66,12 @@ SYSTEM_PROMPT = """You are a helpful coding agent that solves programming tasks 
 
 Rules:
 - Every assistant response must contain exactly one tool call.
+- Available tools are `search_files`, `read`, `execute_bash`, `edit_via_str_replace`, `compact`, and `submit`.
+- Use `read(path, start_line, limit)` for bounded file inspection after search.
 - Use `compact` at least once before `submit`.
 - The original task prompt remains visible after `compact`.
 - After `compact`, earlier working history is gone except for the summary you wrote.
-- Compact after useful investigation or changes, then continue solving; do not compact twice in a row.
+- Compact after useful investigation or changes, usually by turn 25-40, then continue solving; do not compact twice in a row.
 - Use `submit` when the repository is ready for hidden-test scoring."""
 
 

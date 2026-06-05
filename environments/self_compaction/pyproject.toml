@@ -25,6 +25,7 @@ include = [
     "utils/**/*.py",
     "tools/*.py",
     "scripts/*.py",
+    "configs/**/*.toml",
     "README.md",
     "pyproject.toml",
 ]

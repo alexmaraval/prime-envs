@@ -46,7 +46,7 @@ Install the local environment, then run a one-example smoke eval:
 
 ```bash
 cd environments/self_compaction
-prime env install self-compaction
+prime env install self-compaction --path ..
 
 prime eval run self-compaction \
   --provider openai \
@@ -66,6 +66,34 @@ prime eval run self-compaction \
 
 Use `--skip-upload` while iterating locally. Drop it when you want the finished
 run to be uploaded to the Prime platform.
+
+## Publishing To Env Hub
+
+Run the local gates before pushing:
+
+```bash
+cd environments/self_compaction
+uv build
+uv run pytest tests/test_self_compaction.py tests/test_visualize_rollouts.py -q
+prime env install self-compaction --path .. --no-upgrade
+```
+
+Then push from the environment directory. Choose `PRIVATE` while iterating and
+switch to `PUBLIC` only when you want the environment discoverable:
+
+```bash
+prime env push --visibility PRIVATE
+# or, when pushing to a specific user/team namespace:
+prime env push --owner <owner> --visibility PRIVATE
+```
+
+After the push completes, use the returned Hub id everywhere large or hosted
+runs refer to the environment:
+
+```bash
+prime env status <owner>/self-compaction
+prime env info <owner>/self-compaction
+```
 
 ## Eval Command Modes
 
@@ -166,11 +194,12 @@ prime eval run self-compaction \
 ### Hosted Mode
 
 For hosted evals, push the environment first and run against the Hub slug. Include
-the sandbox/instance access flags when the hosted run needs to create and inspect
-Prime sandboxes.
+the sandbox/instance access flags because this environment creates Prime
+Sandboxes and inspects sandbox instances during rollouts.
 
 ```bash
-prime env push self-compaction --visibility PRIVATE
+cd environments/self_compaction
+prime env push --visibility PRIVATE
 
 prime eval run <owner>/self-compaction \
   --hosted \
@@ -189,6 +218,76 @@ prime eval run <owner>/self-compaction \
   -s \
   --follow
 ```
+
+## Training
+
+Use Hosted Training on the Prime Intellect platform for the first RL run. This is
+the CPU-launch path and is the right default before setting up self-managed GPU
+infrastructure.
+
+1. Push the environment and wait for a healthy Hub action:
+
+```bash
+cd environments/self_compaction
+prime env push --visibility PRIVATE
+prime env status <owner>/self-compaction
+```
+
+2. Copy the starter config and replace `your-owner/self-compaction` with the Hub
+id returned by the push:
+
+```bash
+cp configs/rl/self-compaction-hosted-smoke.toml /tmp/self-compaction-train.toml
+$EDITOR /tmp/self-compaction-train.toml
+```
+
+3. Launch Hosted Training:
+
+```bash
+prime train /tmp/self-compaction-train.toml
+```
+
+The starter config keeps rollout pressure low:
+
+- `batch_size = 32`
+- `rollouts_per_example = 8`
+- `max_inflight_rollouts = 16`
+- `max_async_level = 1`
+- `max_turns = 120`
+- `num_examples = 200`
+
+The reward is binary and sparse, so the config enables conservative online
+difficulty filtering. Hosted Training accepts only one of
+`max_inflight_rollouts` and `oversampling_factor`; the smoke config keeps
+`max_inflight_rollouts = 16` because sandbox fanout is the first thing to
+control. If reward diversity looks healthy and you want oversampling later,
+remove `max_inflight_rollouts` before adding `oversampling_factor = 2.0`.
+Inspect rollouts and reward distributions before scaling:
+
+```bash
+prime train list
+prime train get <run-id>
+prime train progress <run-id>
+prime train distributions <run-id>
+prime train rollouts <run-id>
+prime train checkpoints <run-id>
+```
+
+Scale in this order once samples look healthy: increase `num_examples`, then
+`max_turns`, then `batch_size`/`max_inflight_rollouts`. Keep `batch_size`
+divisible by `rollouts_per_example`, and keep sandbox resource limits
+conservative until sandbox OOM/timeout metrics are quiet.
+
+Self-managed `prime-rl` is the power-user path for local GPU infrastructure:
+
+```bash
+prime lab setup --prime-rl
+```
+
+After setup, generate or adapt a separate `prime-rl` config with the same
+`[[env]]` args and conservative rollout settings. Local `prime-rl` runs require
+GPU access; Hosted Training is the recommended first launch path for this
+sandbox-heavy environment.
 
 ## Eval Parameter Reference
 

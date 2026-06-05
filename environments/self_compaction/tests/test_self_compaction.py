@@ -74,6 +74,7 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
             [
                 "execute_bash",
                 "search_files",
+                "read",
                 "edit_via_str_replace",
                 "compact",
                 "submit",
@@ -94,6 +95,7 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
             ["path", "old_str", "new_str"],
         )
         self.assertEqual(defs["search_files"]["parameters"]["required"], ["pattern"])
+        self.assertEqual(defs["read"]["parameters"]["required"], ["path"])
         self.assertNotIn("state", defs["execute_bash"]["parameters"]["properties"])
 
     async def test_tool_metrics_count_dict_transcripts(self) -> None:
@@ -101,15 +103,131 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
         state = state_with_prompt([{"role": "user", "content": "task"}])
         state["full_rollout_messages"] = [
             assistant_tool("search_files", {"pattern": "needle"}, "c1"),
+            assistant_tool("read", {"path": "README.md"}, "c_read"),
             assistant_tool("compact", {"summary": "summary"}, "c2"),
             assistant_tool("submit", {}, "c3"),
         ]
         metrics = {func.__name__: await func(state) for func in rubric.funcs}
 
-        self.assertEqual(metrics["total_tool_calls"], 3)
+        self.assertEqual(metrics["total_tool_calls"], 4)
         self.assertEqual(metrics["search_files_calls"], 1)
+        self.assertEqual(metrics["read_calls"], 1)
         self.assertEqual(metrics["compact_calls"], 1)
         self.assertEqual(metrics["submit_calls"], 1)
+
+    async def test_non_edit_tools_ignore_benign_extra_args(self) -> None:
+        env = make_env()
+        calls = []
+
+        async def fake_run_tool_script(
+            tool_name: str,
+            args: list[str],
+            state: vf.State,
+            sandbox_command_timeout: int = 90,
+            working_dir: str | None = None,
+        ) -> str:
+            calls.append(
+                {
+                    "tool_name": tool_name,
+                    "args": args,
+                    "timeout": sandbox_command_timeout,
+                    "working_dir": working_dir,
+                }
+            )
+            return "ok"
+
+        env.run_tool_script = fake_run_tool_script  # type: ignore[method-assign]
+        prompt = [{"role": "system", "content": "system"}, {"role": "user", "content": "task"}]
+        state = state_with_prompt(prompt)
+
+        await env.env_response(
+            prompt
+            + [
+                assistant_tool(
+                    "execute_bash",
+                    {"cmd": "pwd", "description": "inspect current directory"},
+                    "c1",
+                )
+            ],
+            state,
+        )
+        await env.env_response(
+            prompt
+            + [
+                assistant_tool(
+                    "search_files",
+                    {"query": "needle", "path": "src"},
+                    "c2",
+                )
+            ],
+            state,
+        )
+        await env.env_response(
+            prompt
+            + [
+                assistant_tool(
+                    "read",
+                    {
+                        "path": "self_compaction.py",
+                        "start_line": 3,
+                        "limit": 5,
+                        "title": "inspect file",
+                    },
+                    "c3",
+                )
+            ],
+            state,
+        )
+
+        self.assertEqual(calls[0]["tool_name"], "execute_bash.py")
+        self.assertEqual(calls[0]["args"], ["--cmd", "pwd"])
+        self.assertEqual(calls[1]["tool_name"], "search_files.py")
+        self.assertEqual(calls[1]["args"], ["--pattern", "needle"])
+        self.assertEqual(calls[2]["tool_name"], "read_file.py")
+        self.assertEqual(
+            calls[2]["args"],
+            ["self_compaction.py", "--start-line", "3", "--limit", "5"],
+        )
+
+    async def test_submit_ignores_extra_args(self) -> None:
+        env = make_env()
+        prompt = [{"role": "system", "content": "system"}, {"role": "user", "content": "task"}]
+        state = state_with_prompt(prompt)
+        state["compaction_count"] = 1
+
+        response = await env.env_response(
+            prompt
+            + [
+                assistant_tool(
+                    "submit",
+                    {"path": "README.md", "summary": "ready", "message": "done"},
+                )
+            ],
+            state,
+        )
+
+        self.assertTrue(state["submitted"])
+        self.assertIn("Submission accepted", response[0]["content"])
+
+    async def test_edit_tool_missing_required_args_still_errors(self) -> None:
+        env = make_env()
+        prompt = [{"role": "system", "content": "system"}, {"role": "user", "content": "task"}]
+        state = state_with_prompt(prompt)
+
+        response = await env.env_response(
+            prompt
+            + [
+                assistant_tool(
+                    "edit_via_str_replace",
+                    {"old_str": "old", "new_str": "new"},
+                )
+            ],
+            state,
+        )
+
+        payload = json.loads(response[0]["content"])
+        self.assertEqual(payload["status"], "error")
+        self.assertIn("Error executing tool 'edit_via_str_replace'", payload["message"])
 
     async def test_submit_before_compact_is_rejected(self) -> None:
         env = make_env()

@@ -40,6 +40,7 @@ logging.root.handlers.clear()
 TOOLS_DIR = Path(__file__).resolve().parent / "tools"
 EXECUTE_BASH = TOOLS_DIR / "execute_bash.py"
 SEARCH_FILES = TOOLS_DIR / "search_files.py"
+READ_FILE = TOOLS_DIR / "read_file.py"
 STR_REPLACE = TOOLS_DIR / "str_replace.py"
 
 PATH_SWEBENCH = (
@@ -280,6 +281,7 @@ class SelfCompactionToolMonitorRubric(vf.Rubric):
     TOOL_NAMES = (
         "execute_bash",
         "search_files",
+        "read",
         "edit_via_str_replace",
         "compact",
         "submit",
@@ -389,6 +391,8 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         self.remove_tool(self.bash)
         self.add_tool(self.execute_bash)
         self.add_tool(self.search_files)
+        self.add_tool(self.read)
+        self._relax_tool_schema("read", required=["path"])
         self.add_tool(self.edit_via_str_replace)
         self.add_tool(self.compact)
         self.add_tool(self.submit)
@@ -406,6 +410,17 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             ]
         elif self.rubric is monitor:
             self.rubric = vf.Rubric()
+
+    def _relax_tool_schema(self, tool_name: str, required: list[str]) -> None:
+        for tool in self.tool_defs:
+            if getattr(tool, "name", None) != tool_name:
+                continue
+            parameters = getattr(tool, "parameters", None)
+            if isinstance(parameters, dict):
+                parameters["required"] = list(required)
+            if hasattr(tool, "strict"):
+                tool.strict = False
+            return
 
     def _log_retry_with_sandbox_id(self, retry_state: Any) -> None:
         sandbox_id = "unknown"
@@ -587,6 +602,42 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             working_dir=working_dir,
         )
 
+    async def read(
+        self, path: str, start_line: int | None = None, limit: int | None = None
+    ) -> str:
+        """Read a bounded slice of a repository text file.
+
+        Args:
+            path: Path to a text file under the repository root.
+            start_line: Optional 1-indexed line number where reading starts.
+            limit: Optional maximum number of lines to return.
+        """
+        return "Internal error: read is dispatched by the environment."
+
+    async def _read_impl(
+        self,
+        path: str | None = None,
+        start_line: int | None = None,
+        limit: int | None = None,
+        state: str | None = None,
+        sandbox_command_timeout: int = 90,
+        working_dir: str | None = None,
+    ) -> str:
+        start_line = 1 if start_line is None else start_line
+        limit = 200 if limit is None else limit
+        args = (
+            ["-h"]
+            if not path
+            else [path, "--start-line", str(start_line), "--limit", str(limit)]
+        )
+        return await self.run_tool_script(
+            READ_FILE.name,
+            args,
+            state=state,
+            sandbox_command_timeout=sandbox_command_timeout,
+            working_dir=working_dir,
+        )
+
     async def edit_via_str_replace(self, path: str, old_str: str, new_str: str) -> str:
         """Replace exactly one occurrence of text in a file.
 
@@ -710,19 +761,64 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         state["agent_signaled_done"] = True
         return "Submission accepted. The environment will run hidden tests now."
 
+    def _compatible_tool_args(
+        self, tool_name: str, tool_args: dict[str, Any]
+    ) -> dict[str, Any]:
+        if tool_name == "edit_via_str_replace":
+            return tool_args
+        updated = dict(tool_args)
+        aliases = {
+            "execute_bash": {"cmd": "command"},
+            "search_files": {"query": "pattern"},
+            "read": {"file": "path", "filepath": "path", "filename": "path"},
+        }
+        for source, target in aliases.get(tool_name, {}).items():
+            if target not in updated and source in updated:
+                updated[target] = updated[source]
+        allowed = {
+            "execute_bash": {
+                "command",
+                "state",
+                "sandbox_command_timeout",
+                "working_dir",
+            },
+            "search_files": {
+                "pattern",
+                "state",
+                "sandbox_command_timeout",
+                "working_dir",
+            },
+            "read": {
+                "path",
+                "start_line",
+                "limit",
+                "state",
+                "sandbox_command_timeout",
+                "working_dir",
+            },
+            "compact": {"summary", "state"},
+            "submit": {"state"},
+        }.get(tool_name)
+        if allowed is None:
+            return updated
+        return {key: value for key, value in updated.items() if key in allowed}
+
     async def call_tool(
         self, tool_name: str, tool_args: dict[str, Any], tool_call_id: str, **kwargs: Any
     ) -> vf.Message:
         dispatch = {
             "execute_bash": self._execute_bash_impl,
             "search_files": self._search_files_impl,
+            "read": self._read_impl,
             "edit_via_str_replace": self._edit_via_str_replace_impl,
             "compact": self._compact_impl,
             "submit": self._submit_impl,
         }
         if tool_name not in dispatch:
             return await super().call_tool(tool_name, tool_args, tool_call_id, **kwargs)
-        result = await dispatch[tool_name](**tool_args)
+        result = await dispatch[tool_name](
+            **self._compatible_tool_args(tool_name, tool_args)
+        )
         return vf.ToolMessage(role="tool", content=str(result), tool_call_id=tool_call_id)
 
     async def run_tool_script(
@@ -753,7 +849,7 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
                 f"/sandbox-workspace/tools/{tool_path.name}",
                 str(tool_path),
             )
-            for tool_path in (EXECUTE_BASH, SEARCH_FILES, STR_REPLACE)
+            for tool_path in (EXECUTE_BASH, SEARCH_FILES, READ_FILE, STR_REPLACE)
         ]
         try:
             await asyncio.gather(*tasks)
