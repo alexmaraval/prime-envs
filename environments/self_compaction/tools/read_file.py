@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 
-MAX_LIMIT = 1000
+MAX_LINES = 200
 
 
 def resolve_inside_root(root: Path, raw_path: str) -> Path:
@@ -27,14 +27,14 @@ def main() -> int:
     parser.add_argument(
         "--start-line",
         type=int,
-        default=1,
+        required=True,
         help="1-indexed line number where reading starts",
     )
     parser.add_argument(
-        "--limit",
+        "--end-line",
         type=int,
-        default=200,
-        help=f"Maximum number of lines to return, capped at {MAX_LIMIT}",
+        required=True,
+        help="1-indexed inclusive line number where reading ends",
     )
     args = parser.parse_args()
 
@@ -52,8 +52,20 @@ def main() -> int:
         sys.stderr.write(f"Path is not a file: {args.path}\n")
         return 1
 
-    start_line = max(1, args.start_line)
-    limit = min(MAX_LIMIT, max(1, args.limit))
+    start_line = args.start_line
+    end_line = args.end_line
+    if start_line < 1:
+        sys.stderr.write("--start-line must be >= 1\n")
+        return 1
+    if end_line < start_line:
+        sys.stderr.write("--end-line must be greater than or equal to --start-line\n")
+        return 1
+    if end_line - start_line + 1 > MAX_LINES:
+        sys.stderr.write(
+            f"Requested {end_line - start_line + 1} lines; read at most {MAX_LINES} "
+            "lines at a time with a narrower range.\n"
+        )
+        return 1
     try:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError as exc:
@@ -62,17 +74,18 @@ def main() -> int:
 
     rel_path = path.relative_to(root.resolve(strict=True))
     start_idx = start_line - 1
-    end_idx = min(len(lines), start_idx + limit)
+    end_idx = min(len(lines), end_line)
     if start_idx >= len(lines):
-        sys.stdout.write(f"{rel_path}: no lines at or after {start_line}\n")
+        sys.stdout.write(
+            f"{rel_path}: no lines at or after {start_line} "
+            f"(file has {len(lines)} lines)\n"
+        )
         return 0
 
-    width = len(str(end_idx))
-    for line_number in range(start_line, end_idx + 1):
-        sys.stdout.write(f"{rel_path}:{line_number:>{width}}: {lines[line_number - 1]}\n")
-    if end_idx < len(lines):
-        remaining = len(lines) - end_idx
-        sys.stdout.write(f"\nStopped after {limit} lines. {remaining} lines remain.\n")
+    sys.stdout.write(f"{rel_path} lines {start_line}-{end_idx} of {len(lines)}:\n")
+    sys.stdout.write("<content>\n")
+    sys.stdout.write("\n".join(lines[start_idx:end_idx]))
+    sys.stdout.write("\n</content>\n")
     return 0
 
 

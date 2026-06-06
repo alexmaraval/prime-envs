@@ -17,6 +17,7 @@ Visible tools:
 
 - `execute_bash(command: str)`
 - `search_files(pattern: str)`
+- `read(path: str, start_line: int, end_line: int)`
 - `edit_via_str_replace(path: str, old_str: str, new_str: str)`
 - `compact(summary: str)`
 - `submit()`

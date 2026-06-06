@@ -392,7 +392,7 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         self.add_tool(self.execute_bash)
         self.add_tool(self.search_files)
         self.add_tool(self.read)
-        self._relax_tool_schema("read", required=["path"])
+        self._relax_tool_schema("read", required=["path", "start_line", "end_line"])
         self.add_tool(self.edit_via_str_replace)
         self.add_tool(self.compact)
         self.add_tool(self.submit)
@@ -602,15 +602,13 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             working_dir=working_dir,
         )
 
-    async def read(
-        self, path: str, start_line: int | None = None, limit: int | None = None
-    ) -> str:
+    async def read(self, path: str, start_line: int, end_line: int) -> str:
         """Read a bounded slice of a repository text file.
 
         Args:
             path: Path to a text file under the repository root.
-            start_line: Optional 1-indexed line number where reading starts.
-            limit: Optional maximum number of lines to return.
+            start_line: 1-indexed line number where reading starts.
+            end_line: 1-indexed inclusive line number where reading ends.
         """
         return "Internal error: read is dispatched by the environment."
 
@@ -618,18 +616,14 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         self,
         path: str | None = None,
         start_line: int | None = None,
-        limit: int | None = None,
+        end_line: int | None = None,
         state: str | None = None,
         sandbox_command_timeout: int = 90,
         working_dir: str | None = None,
     ) -> str:
-        start_line = 1 if start_line is None else start_line
-        limit = 200 if limit is None else limit
-        args = (
-            ["-h"]
-            if not path
-            else [path, "--start-line", str(start_line), "--limit", str(limit)]
-        )
+        if not path or start_line is None or end_line is None:
+            return "Error: read requires path, start_line, and end_line."
+        args = [path, "--start-line", str(start_line), "--end-line", str(end_line)]
         return await self.run_tool_script(
             READ_FILE.name,
             args,
@@ -770,7 +764,14 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         aliases = {
             "execute_bash": {"cmd": "command"},
             "search_files": {"query": "pattern"},
-            "read": {"file": "path", "filepath": "path", "filename": "path"},
+            "read": {
+                "file": "path",
+                "filepath": "path",
+                "filename": "path",
+                "start": "start_line",
+                "end": "end_line",
+                "stop_line": "end_line",
+            },
         }
         for source, target in aliases.get(tool_name, {}).items():
             if target not in updated and source in updated:
@@ -778,7 +779,7 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         allowed = {
             "execute_bash": {"command"},
             "search_files": {"pattern"},
-            "read": {"path", "start_line", "limit"},
+            "read": {"path", "start_line", "end_line"},
             "compact": {"summary"},
             "submit": set(),
         }.get(tool_name)

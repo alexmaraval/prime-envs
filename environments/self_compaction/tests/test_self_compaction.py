@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
 import sys
+import tempfile
 import unittest
 
 from datasets import Dataset
@@ -95,8 +97,37 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
             ["path", "old_str", "new_str"],
         )
         self.assertEqual(defs["search_files"]["parameters"]["required"], ["pattern"])
-        self.assertEqual(defs["read"]["parameters"]["required"], ["path"])
+        self.assertEqual(
+            defs["read"]["parameters"]["required"],
+            ["path", "start_line", "end_line"],
+        )
         self.assertNotIn("state", defs["execute_bash"]["parameters"]["properties"])
+
+    def test_read_file_outputs_plain_bounded_slice(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "sample.py").write_text("one\ntwo\nthree\nfour\n", encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ENV_ROOT / "tools" / "read_file.py"),
+                    "sample.py",
+                    "--start-line",
+                    "2",
+                    "--end-line",
+                    "3",
+                ],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            result.stdout,
+            "sample.py lines 2-3 of 4:\n<content>\ntwo\nthree\n</content>\n",
+        )
 
     async def test_tool_metrics_count_dict_transcripts(self) -> None:
         rubric = SelfCompactionToolMonitorRubric()
@@ -177,7 +208,7 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
                     {
                         "path": "self_compaction.py",
                         "start_line": 3,
-                        "limit": 5,
+                        "end_line": 7,
                         "title": "inspect file",
                     },
                     "c3",
@@ -193,7 +224,7 @@ class SelfCompactionEnvTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(calls[2]["tool_name"], "read_file.py")
         self.assertEqual(
             calls[2]["args"],
-            ["self_compaction.py", "--start-line", "3", "--limit", "5"],
+            ["self_compaction.py", "--start-line", "3", "--end-line", "7"],
         )
         for call in calls:
             self.assertIs(call["state"], state)
