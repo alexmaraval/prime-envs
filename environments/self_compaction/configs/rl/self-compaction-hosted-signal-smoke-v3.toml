@@ -1,0 +1,63 @@
+# Hosted Training signal smoke config for self-compaction.
+# Goal: test whether larger rollout groups reduce zero-advantage filtering.
+# Push the environment privately before launching so the Hub copy is current.
+
+name = "self-compaction-hosted-signal-smoke-v3"
+model = "poolside/Laguna-XS.2"
+max_steps = 6
+
+# Keep four prompt groups per step, but double the rollout group size from v2.
+# This should make all-solved/all-failed groups less common while keeping only
+# eight sandboxes in flight at once.
+batch_size = 32
+rollouts_per_example = 8
+max_inflight_rollouts = 8
+learning_rate = 1e-5
+lora_alpha = 16
+max_async_level = 1
+
+[sampling]
+max_tokens = 5000
+temperature = 1.0
+
+[[env]]
+id = "alex-maraval/self-compaction"
+
+[env.args]
+dataset_name = "R2E-Gym/R2E-Gym-Subset"
+split = "train"
+simple_only = true
+num_examples = 200
+seed = 11
+max_turns = 60
+min_compactions = 1
+sandbox_command_timeout = 60
+test_timeout = 300
+rollout_timeout_seconds = 1500
+cpu_cores = 4
+memory_gb = 4
+disk_size_gb = 2
+
+# Intentionally no [eval] block for this diagnostic. The v2 evals consumed
+# several minutes and returned 0.0, so this run spends the budget on train signal.
+
+[val]
+num_examples = 2
+rollouts_per_example = 1
+interval = 50
+
+[buffer]
+easy_threshold = 1.0
+hard_threshold = 0.0
+easy_fraction = 0.0
+hard_fraction = 0.3
+online_difficulty_filtering = false
+seed = 42
+
+[checkpoints]
+interval = 50
+keep_cloud = 1
+
+[adapters]
+interval = 50
+keep_last = 1

@@ -1,0 +1,89 @@
+# Hosted Training smoke config for self-compaction.
+# Push the environment first, then replace `your-owner/self-compaction` with the
+# Hub id returned by `prime env push`.
+
+name = "self-compaction-hosted-smoke"
+model = "poolside/Laguna-XS.2"
+max_steps = 80
+
+# This environment launches Prime Sandboxes and runs hidden tests, so keep the
+# first hosted run intentionally small. Increase batch_size and inflight rollout
+# limits only after reward distributions and rollout samples look healthy.
+batch_size = 32
+rollouts_per_example = 8
+max_inflight_rollouts = 16
+learning_rate = 1e-5
+lora_alpha = 16
+max_async_level = 1
+
+[sampling]
+max_tokens = 12000
+temperature = 1.0
+
+[[env]]
+id = "alex-maraval/self-compaction"
+
+[env.args]
+dataset_name = "R2E-Gym/R2E-Gym-Subset"
+split = "train"
+simple_only = true
+num_examples = 200
+seed = 11
+max_turns = 120
+min_compactions = 1
+sandbox_command_timeout = 120
+test_timeout = 900
+rollout_timeout_seconds = 3600
+cpu_cores = 4
+memory_gb = 4
+disk_size_gb = 2
+
+[eval]
+interval = 20
+num_examples = 8
+rollouts_per_example = 1
+eval_base_model = true
+
+[[eval.env]]
+id = "alex-maraval/self-compaction"
+
+[eval.env.args]
+dataset_name = "R2E-Gym/R2E-Gym-Subset"
+split = "train"
+simple_only = true
+num_examples = 20
+seed = 111
+max_turns = 120
+min_compactions = 1
+sandbox_command_timeout = 120
+test_timeout = 900
+rollout_timeout_seconds = 3600
+cpu_cores = 4
+memory_gb = 4
+disk_size_gb = 2
+
+[val]
+num_examples = 8
+rollouts_per_example = 1
+interval = 5
+
+# Rewards are binary and sparse, so difficulty filtering helps avoid spending
+# the whole batch on already-solved or impossible tasks once the buffer fills.
+# Hosted Training accepts only one of max_inflight_rollouts and
+# oversampling_factor; this smoke config keeps the inflight cap for sandbox
+# safety. To test oversampling later, remove max_inflight_rollouts first.
+[buffer]
+easy_threshold = 1.0
+hard_threshold = 0.0
+easy_fraction = 0.0
+hard_fraction = 0.3
+online_difficulty_filtering = true
+seed = 42
+
+[checkpoints]
+interval = 25
+keep_cloud = 3
+
+[adapters]
+interval = 25
+keep_last = 3

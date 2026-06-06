@@ -1,0 +1,80 @@
+# Cost-reduced Hosted Training smoke config for self-compaction.
+# Push the environment privately, then set the Hub id below if needed.
+
+name = "self-compaction-hosted-smoke-v2"
+model = "poolside/Laguna-XS.2"
+max_steps = 10
+
+batch_size = 16
+rollouts_per_example = 4
+max_inflight_rollouts = 8
+learning_rate = 1e-5
+lora_alpha = 16
+max_async_level = 1
+
+[sampling]
+max_tokens = 6000
+temperature = 1.0
+
+[[env]]
+id = "alex-maraval/self-compaction"
+
+[env.args]
+dataset_name = "R2E-Gym/R2E-Gym-Subset"
+split = "train"
+simple_only = true
+num_examples = 200
+seed = 11
+max_turns = 70
+min_compactions = 1
+sandbox_command_timeout = 60
+test_timeout = 300
+rollout_timeout_seconds = 1800
+cpu_cores = 4
+memory_gb = 4
+disk_size_gb = 2
+
+[eval]
+interval = 5
+num_examples = 2
+rollouts_per_example = 1
+eval_base_model = false
+
+[[eval.env]]
+id = "alex-maraval/self-compaction"
+
+[eval.env.args]
+dataset_name = "R2E-Gym/R2E-Gym-Subset"
+split = "train"
+simple_only = true
+num_examples = 20
+seed = 111
+max_turns = 70
+min_compactions = 1
+sandbox_command_timeout = 60
+test_timeout = 300
+rollout_timeout_seconds = 1800
+cpu_cores = 4
+memory_gb = 4
+disk_size_gb = 2
+
+[val]
+num_examples = 2
+rollouts_per_example = 1
+interval = 5
+
+[buffer]
+easy_threshold = 1.0
+hard_threshold = 0.0
+easy_fraction = 0.0
+hard_fraction = 0.3
+online_difficulty_filtering = false
+seed = 42
+
+[checkpoints]
+interval = 5
+keep_cloud = 2
+
+[adapters]
+interval = 5
+keep_last = 2

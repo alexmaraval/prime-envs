@@ -14,5 +14,8 @@ wheels/
 ./outputs
 ./environments/*/outputs
 
+# local BIRD benchmark data and generated profiles
+environments/bird/.data/
+environments/bird/**/.data/
 
 secrets.env

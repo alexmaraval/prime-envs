@@ -1,0 +1,35 @@
+[project]
+name = "self-compaction"
+description = "Self-compacting coding-agent environment based on Mini SWE Agent Plus"
+tags = ["coding", "multi-turn", "sandbox", "tool-use", "compaction", "rlvr"]
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "verifiers>=0.1.15.dev17",
+    "prime-sandboxes>=0.2.19",
+    "datasets>=2.18.0",
+    "httpx",
+    "jinja2",
+    "pytest>=8.0.0",
+    "tenacity",
+    "swebench==4.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = [
+    "self_compaction.py",
+    "utils/**/*.py",
+    "tools/*.py",
+    "scripts/*.py",
+    "configs/**/*.toml",
+    "README.md",
+    "pyproject.toml",
+]
+
+[tool.verifiers.eval]
+num_examples = 1
+rollouts_per_example = 1
