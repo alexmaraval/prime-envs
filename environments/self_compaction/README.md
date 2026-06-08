@@ -17,10 +17,35 @@ Visible tools:
 
 - `execute_bash(command: str)`
 - `search_files(pattern: str)`
-- `read(path: str, start_line: int, end_line: int)`
+- `read(path: str, start_line: int = 1, end_line: int | None = None, limit: int = 200)`
 - `edit_via_str_replace(path: str, old_str: str, new_str: str)`
 - `compact(summary: str)`
 - `submit()`
+
+The environment also accepts a small hidden compatibility layer for common model
+tool priors: `bash`/`shell` route to `execute_bash`, `edit` routes to
+`edit_via_str_replace`, `read_file` routes to `read`, and `grep`/`rg` route to
+`search_files`. These aliases are counted separately in metrics but are not the
+preferred visible tool surface. The environment requests sandbox images with
+real `rg`/`ripgrep` available, then checks the sandbox at setup time and tells
+the agent whether shell `rg` commands are available.
+
+## Sandbox Tool Availability
+
+The preferred sandbox image includes:
+
+- `ripgrep`, providing the `rg` command on `PATH`
+
+This is an image-level request, not a rollout startup install. Network-isolated
+rollouts do not install packages at startup. The environment labels sandbox
+requests with `requires-command-rg` and `requires-package-ripgrep`, then checks
+`command -v rg` during setup.
+
+If `rg` is present, the agent receives a tool-status note saying it can use
+bounded `rg` commands. If `rg` is missing, the rollout still starts; the agent is
+told not to run `rg` and to use `search_files`, `read`, `find`, `grep -R`,
+`sed -n`, `head`, or short Python snippets instead. The `rg_available` metric
+records which case occurred.
 
 `submit()` is rejected until `compact()` has succeeded at least once.
 Consecutive `compact()` calls are rejected unless the agent does intervening
@@ -37,6 +62,12 @@ SWE-bench-style datasets, including:
 - `R2E-Gym/R2E-Gym-Lite`
 - `PrimeIntellect/SWE-Bench-Verified-Quick`
 - `SWE-bench/SWE-bench_Verified`
+
+Every loaded example is tagged with a static difficulty tier from metadata:
+`easy`, `medium`, or `hard`. Pass `difficulty` to select one tier, or
+`difficulty_mix` in `[easy, medium, hard]` order to sample an exact weighted
+mixture. The optional `difficulty_map_path` argument points to a JSONL map of
+empirical solve rates; when present, empirical tiers override static tiers.
 
 For R2E-Gym tasks, hidden tests are archived and removed from the sandbox during
 the rollout, then restored only in `post_rollout` for scoring.
@@ -327,6 +358,9 @@ Pass these through `-a` / `--env-args` as a JSON object.
 | `dataset_name` | `str` | `"R2E-Gym/R2E-Gym-Subset"` | Hugging Face dataset name. |
 | `split` | `str \| null` | dataset-dependent | `train` for R2E-Gym subset/lite, `test` for SWE-bench-style datasets. |
 | `simple_only` | `bool` | `true` | Keep only small examples when metadata exposes file/line counts. |
+| `difficulty` | `str` | `"all"` | One of `all`, `easy`, `medium`, or `hard`. Filters after static/empirical difficulty tagging. |
+| `difficulty_mix` | `list[float] \| str \| null` | `null` | Exact weighted sampling in `[easy, medium, hard]` order. Cannot be combined with `difficulty != "all"`. |
+| `difficulty_map_path` | `str \| null` | `null` | JSONL difficulty map, absolute or relative to the environment package root. |
 | `num_examples` | `int \| null` | `null` | Optional cap applied while loading the environment dataset after shuffle/filtering. |
 | `seed` | `int` | `0` | Dataset shuffle seed before optional `num_examples` selection. |
 | `filter_repos` | `list[str] \| null` | `null` | Exclude matching `repo` or `repo_name` values. |
@@ -402,3 +436,13 @@ uv run python scripts/visualize_rollouts.py outputs/evals/<run>/results.jsonl
 
 The report shows the full audit transcript next to the transcript reconstructed
 from what the model could see after compaction.
+
+Build an empirical difficulty map from multi-rollout eval results:
+
+```bash
+uv run python scripts/build_difficulty_map.py outputs/evals/<run>/results.jsonl \
+  --dataset-name R2E-Gym/R2E-Gym-Subset \
+  --split train \
+  --min-rollouts 4 \
+  -o data/difficulty_maps/r2e_subset_train.jsonl
+```

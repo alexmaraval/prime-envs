@@ -72,8 +72,21 @@ def should_search(path: Path) -> bool:
     return path.suffix.lower() in TEXT_SUFFIXES
 
 
-def iter_files(root: Path):
-    for path in sorted(root.rglob("*")):
+def resolve_inside_root(root: Path, raw_path: str) -> Path:
+    base = root.resolve(strict=True)
+    requested = Path(raw_path)
+    candidate = requested if requested.is_absolute() else base / requested
+    resolved = candidate.resolve(strict=True)
+    try:
+        resolved.relative_to(base)
+    except ValueError as exc:
+        raise ValueError(f"path escapes repository root: {raw_path}") from exc
+    return resolved
+
+
+def iter_files(root: Path, search_root: Path):
+    paths = [search_root] if search_root.is_file() else sorted(search_root.rglob("*"))
+    for path in paths:
         if any(part in SKIP_DIRS for part in path.parts):
             continue
         if not path.is_file() or not should_search(path):
@@ -91,14 +104,27 @@ def main() -> int:
         description="Search repository text files for a regex or literal pattern."
     )
     parser.add_argument("--pattern", required=True, help="Regex or literal text to find")
+    parser.add_argument(
+        "--path",
+        default=".",
+        help="Optional file or directory path under the repository root",
+    )
     args = parser.parse_args()
 
     root = Path.cwd()
+    try:
+        search_root = resolve_inside_root(root, args.path)
+    except FileNotFoundError:
+        sys.stderr.write(f"Path does not exist: {args.path}\n")
+        return 1
+    except ValueError as exc:
+        sys.stderr.write(f"{exc}\n")
+        return 1
     matcher = compile_pattern(args.pattern)
     matches = 0
     searched = 0
 
-    for path in iter_files(root):
+    for path in iter_files(root, search_root):
         searched += 1
         try:
             text = path.read_text(encoding="utf-8", errors="replace")

@@ -1,0 +1,92 @@
+# Hosted Training curriculum config for self-compaction.
+# Push the environment privately before launching so the Hub copy includes the
+# difficulty controls and any packaged difficulty map.
+
+name = "self-compaction-hosted-curriculum-v1"
+model = "poolside/Laguna-XS.2"
+max_steps = 20
+
+# Four prompt groups per step, eight rollouts each. Keep sandbox fanout capped
+# while measuring whether curriculum sampling improves within-group contrast.
+batch_size = 32
+rollouts_per_example = 8
+max_inflight_rollouts = 8
+learning_rate = 1e-5
+lora_alpha = 16
+max_async_level = 1
+
+[sampling]
+max_tokens = 5000
+temperature = 1.0
+
+[[env]]
+id = "alex-maraval/self-compaction"
+
+[env.args]
+dataset_name = "R2E-Gym/R2E-Gym-Subset"
+split = "train"
+simple_only = true
+num_examples = 200
+seed = 11
+difficulty_mix = [0.2, 0.6, 0.2]
+# After calibration, package the JSONL map under data/difficulty_maps and
+# uncomment this path.
+# difficulty_map_path = "data/difficulty_maps/r2e_subset_train_laguna_xs2.jsonl"
+max_turns = 60
+min_compactions = 1
+sandbox_command_timeout = 60
+test_timeout = 300
+rollout_timeout_seconds = 1500
+cpu_cores = 4
+memory_gb = 4
+disk_size_gb = 2
+
+# Keep eval deterministic and separate from the curriculum train slice.
+[eval]
+interval = 10
+num_examples = 20
+rollouts_per_example = 1
+eval_base_model = false
+
+[[eval.env]]
+id = "alex-maraval/self-compaction"
+
+[eval.env.args]
+dataset_name = "R2E-Gym/R2E-Gym-Subset"
+split = "train"
+simple_only = true
+num_examples = 20
+seed = 111
+difficulty_mix = [0.2, 0.6, 0.2]
+# difficulty_map_path = "data/difficulty_maps/r2e_subset_train_laguna_xs2.jsonl"
+max_turns = 60
+min_compactions = 1
+sandbox_command_timeout = 60
+test_timeout = 300
+rollout_timeout_seconds = 1500
+cpu_cores = 4
+memory_gb = 4
+disk_size_gb = 2
+
+[val]
+num_examples = 2
+rollouts_per_example = 1
+interval = 50
+
+# Disable online filtering for the first curriculum run. The empirical/static
+# task schedule should be the only changed signal lever.
+[buffer]
+easy_threshold = 1.0
+hard_threshold = 0.0
+easy_fraction = 0.0
+hard_fraction = 0.3
+online_difficulty_filtering = false
+seed = 42
+
+[checkpoints]
+interval = 50
+keep_cloud = 1
+
+[adapters]
+interval = 50
+keep_last = 1

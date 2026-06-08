@@ -8,12 +8,12 @@ import shlex
 import tempfile
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 import httpx
 import tenacity as tc
 import verifiers as vf
-from datasets import Dataset, load_dataset
+from datasets import Dataset, concatenate_datasets, load_dataset
 from prime_sandboxes import (
     CommandTimeoutError,
     SandboxImagePullError,
@@ -43,6 +43,25 @@ SEARCH_FILES = TOOLS_DIR / "search_files.py"
 READ_FILE = TOOLS_DIR / "read_file.py"
 STR_REPLACE = TOOLS_DIR / "str_replace.py"
 
+CANONICAL_TOOL_NAMES = (
+    "execute_bash",
+    "search_files",
+    "read",
+    "edit_via_str_replace",
+    "compact",
+    "submit",
+)
+TOOL_ALIASES = {
+    "bash": "execute_bash",
+    "shell": "execute_bash",
+    "edit": "edit_via_str_replace",
+    "read_file": "read",
+    "grep": "search_files",
+    "rg": "search_files",
+}
+SANDBOX_TOOL_COMMANDS = {"rg": "ripgrep"}
+SANDBOX_IMAGE_HINT_LABELS = ("requires-command-rg", "requires-package-ripgrep")
+
 PATH_SWEBENCH = (
     "PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/bin:/usr/local/sbin:"
     "/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -63,6 +82,10 @@ ENV_VARS_R2E = (
 DEFAULT_DATASET_NAME = "R2E-Gym/R2E-Gym-Subset"
 DEFAULT_MAX_TURNS = 200
 DEFAULT_MAX_SUMMARY_CHARS = 6000
+DIFFICULTY_LEVELS = ("easy", "medium", "hard")
+DIFFICULTY_CHOICES = ("all", *DIFFICULTY_LEVELS)
+EMPIRICAL_EASY_SOLVE_RATE = 0.70
+EMPIRICAL_MEDIUM_SOLVE_RATE = 0.20
 
 
 def _make_test_spec(info: dict[str, Any], namespace: str = "swebench") -> Any:
@@ -117,6 +140,269 @@ def _process_example(example: dict[str, Any]) -> dict[str, Any]:
         "info": {**example},
         "answer": "",
     }
+
+
+def _first_int(example: dict[str, Any], fields: Sequence[str]) -> int | None:
+    for field in fields:
+        if field not in example or example[field] is None:
+            continue
+        try:
+            return int(example[field])
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _static_difficulty(example: dict[str, Any]) -> str:
+    files = _first_int(
+        example,
+        (
+            "num_non_test_files",
+            "non_test_files_count",
+            "num_modified_non_test_files",
+        ),
+    )
+    lines = _first_int(
+        example,
+        (
+            "num_non_test_lines",
+            "non_test_lines_count",
+            "num_modified_non_test_lines",
+        ),
+    )
+    funcs = _first_int(
+        example,
+        (
+            "num_non_test_func_methods",
+            "non_test_func_methods_count",
+            "num_modified_non_test_func_methods",
+        ),
+    )
+    files = 1 if files is None else files
+    lines = 25 if lines is None else lines
+    funcs = 1 if funcs is None else funcs
+    if files <= 1 and lines <= 10 and funcs <= 1:
+        return "easy"
+    if files <= 1 and (lines <= 50 or funcs <= 3):
+        return "medium"
+    return "hard"
+
+
+def _empirical_difficulty_from_solve_rate(solve_rate: float) -> str:
+    if not 0.0 <= solve_rate <= 1.0:
+        raise ValueError("solve_rate must be in [0.0, 1.0]")
+    if solve_rate >= EMPIRICAL_EASY_SOLVE_RATE:
+        return "easy"
+    if solve_rate >= EMPIRICAL_MEDIUM_SOLVE_RATE:
+        return "medium"
+    return "hard"
+
+
+def _task_map_key(
+    dataset_name: str,
+    split: str,
+    example: dict[str, Any],
+) -> tuple[str, str, str, str]:
+    repo = str(example.get("repo_name") or example.get("repo") or "")
+    commit = str(
+        example.get("commit_hash")
+        or example.get("base_commit")
+        or example.get("instance_id")
+        or ""
+    )
+    return (dataset_name, split, repo, commit)
+
+
+def _resolve_difficulty_map_path(path: str | Path) -> Path:
+    candidate = Path(path)
+    if candidate.exists():
+        return candidate
+    if not candidate.is_absolute():
+        package_relative = Path(__file__).resolve().parent / candidate
+        if package_relative.exists():
+            return package_relative
+    raise FileNotFoundError(f"difficulty map not found: {path}")
+
+
+def _load_difficulty_map(
+    path: str | Path | None,
+) -> dict[tuple[str, str, str, str], dict[str, Any]]:
+    if path is None:
+        return {}
+    resolved_path = _resolve_difficulty_map_path(path)
+    text = resolved_path.read_text(encoding="utf-8").strip()
+    if not text:
+        return {}
+
+    def add_entry(
+        records: dict[tuple[str, str, str, str], dict[str, Any]],
+        payload: dict[str, Any],
+    ) -> None:
+        dataset_name = str(payload.get("dataset_name") or DEFAULT_DATASET_NAME)
+        split = str(payload.get("split") or _default_split(dataset_name))
+        repo = str(payload.get("repo_name") or payload.get("repo") or "")
+        commit = str(
+            payload.get("commit_hash")
+            or payload.get("base_commit")
+            or payload.get("instance_id")
+            or ""
+        )
+        if not repo or not commit:
+            raise ValueError(
+                "difficulty map entries must include repo_name/repo and "
+                "commit_hash/base_commit/instance_id"
+            )
+        records[(dataset_name, split, repo, commit)] = dict(payload)
+
+    records: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    if text.startswith("["):
+        decoded = json.loads(text)
+        if not isinstance(decoded, list):
+            raise ValueError("difficulty map JSON must be a list of objects")
+        for payload in decoded:
+            if not isinstance(payload, dict):
+                raise ValueError("difficulty map JSON entries must be objects")
+            add_entry(records, payload)
+        return records
+
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+        payload = json.loads(line)
+        if not isinstance(payload, dict):
+            raise ValueError(
+                f"difficulty map line {line_number} must decode to an object"
+            )
+        add_entry(records, payload)
+    return records
+
+
+def _annotate_difficulty(
+    example: dict[str, Any],
+    dataset_name: str,
+    split: str,
+    difficulty_map: dict[tuple[str, str, str, str], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    annotated = dict(example)
+    static = _static_difficulty(annotated)
+    annotated["static_difficulty"] = static
+    annotated["difficulty"] = static
+    annotated["empirical_solve_rate"] = None
+    annotated["empirical_difficulty"] = None
+    annotated["empirical_num_rollouts"] = None
+    annotated["empirical_mean_turns"] = None
+    annotated["empirical_mean_decode_length"] = None
+
+    entry = (difficulty_map or {}).get(_task_map_key(dataset_name, split, annotated))
+    if not entry:
+        return annotated
+
+    raw_solve_rate = entry.get("solve_rate")
+    if raw_solve_rate is not None:
+        solve_rate = float(raw_solve_rate)
+        empirical = str(
+            entry.get("empirical_difficulty")
+            or _empirical_difficulty_from_solve_rate(solve_rate)
+        )
+        if empirical not in DIFFICULTY_LEVELS:
+            raise ValueError(f"unsupported empirical difficulty: {empirical!r}")
+        annotated["empirical_solve_rate"] = solve_rate
+        annotated["empirical_difficulty"] = empirical
+        annotated["difficulty"] = empirical
+    elif entry.get("empirical_difficulty") is not None:
+        empirical = str(entry["empirical_difficulty"])
+        if empirical not in DIFFICULTY_LEVELS:
+            raise ValueError(f"unsupported empirical difficulty: {empirical!r}")
+        annotated["empirical_difficulty"] = empirical
+        annotated["difficulty"] = empirical
+
+    if entry.get("num_rollouts") is not None:
+        annotated["empirical_num_rollouts"] = int(entry["num_rollouts"])
+    if entry.get("mean_turns") is not None:
+        annotated["empirical_mean_turns"] = float(entry["mean_turns"])
+    if entry.get("mean_decode_length") is not None:
+        annotated["empirical_mean_decode_length"] = float(
+            entry["mean_decode_length"]
+        )
+    return annotated
+
+
+def _coerce_difficulty(difficulty: str | None) -> str:
+    normalized = (difficulty or "all").lower()
+    if normalized not in DIFFICULTY_CHOICES:
+        raise ValueError(
+            f"unsupported difficulty {difficulty!r}; expected one of "
+            f"{', '.join(DIFFICULTY_CHOICES)}"
+        )
+    return normalized
+
+
+def _coerce_difficulty_mix(
+    value: Sequence[float] | str | None,
+) -> tuple[float, ...] | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.startswith("["):
+            decoded = json.loads(stripped)
+            if not isinstance(decoded, list):
+                raise ValueError("difficulty_mix string must decode to a JSON array")
+            items = decoded
+        else:
+            items = [item.strip() for item in stripped.split(",") if item.strip()]
+    else:
+        items = list(value)
+    if len(items) != len(DIFFICULTY_LEVELS):
+        raise ValueError("difficulty_mix must provide easy, medium, hard weights")
+    weights = tuple(float(item) for item in items)
+    if any(weight < 0 for weight in weights):
+        raise ValueError("difficulty_mix weights must be non-negative")
+    total = sum(weights)
+    if total <= 0:
+        raise ValueError("difficulty_mix must contain at least one positive weight")
+    return tuple(weight / total for weight in weights)
+
+
+def _allocate_mixture_counts(total_count: int, mix: Sequence[float]) -> list[int]:
+    if total_count < 0:
+        raise ValueError("total_count must be non-negative")
+    raw_counts = [total_count * weight for weight in mix]
+    counts = [int(raw_count) for raw_count in raw_counts]
+    remaining = total_count - sum(counts)
+    ranked_remainders = sorted(
+        range(len(raw_counts)),
+        key=lambda index: (raw_counts[index] - counts[index], -index),
+        reverse=True,
+    )
+    for index in ranked_remainders[:remaining]:
+        counts[index] += 1
+    return counts
+
+
+def _select_mixed_difficulty_dataset(
+    dataset: Dataset,
+    mix: Sequence[float],
+    num_examples: int,
+    seed: int,
+) -> Dataset:
+    counts = _allocate_mixture_counts(num_examples, mix)
+    selected: list[Dataset] = []
+    for index, (difficulty, count) in enumerate(zip(DIFFICULTY_LEVELS, counts)):
+        if count == 0:
+            continue
+        subset = dataset.filter(
+            lambda row, difficulty=difficulty: row["difficulty"] == difficulty
+        )
+        if len(subset) < count:
+            raise ValueError(
+                f"difficulty_mix requested {count} {difficulty} examples, "
+                f"but only {len(subset)} are available"
+            )
+        selected.append(subset.shuffle(seed=seed + index).select(range(count)))
+    if not selected:
+        return dataset.select(range(0))
+    return concatenate_datasets(selected).shuffle(seed=seed)
 
 
 def _passes_simple_filter(example: dict[str, Any]) -> bool:
@@ -224,6 +510,18 @@ def _tool_call_names(messages: list[Any]) -> list[str]:
     return names
 
 
+def _canonical_tool_name(tool_name: str) -> str:
+    return TOOL_ALIASES.get(tool_name, tool_name)
+
+
+def _canonical_tool_call_names(messages: list[Any]) -> list[str]:
+    return [_canonical_tool_name(name) for name in _tool_call_names(messages)]
+
+
+def _tool_alias_names(messages: list[Any]) -> list[str]:
+    return [name for name in _tool_call_names(messages) if name in TOOL_ALIASES]
+
+
 def _concat_messages(parts: list[list[dict[str, Any]]]) -> list[dict[str, Any]]:
     messages: list[dict[str, Any]] = []
     for part in parts:
@@ -243,6 +541,7 @@ class SelfCompactionMonitorRubric(vf.Rubric):
         self.add_metric(self.sandbox_oom)
         self.add_metric(self.sandbox_timeout)
         self.add_metric(self.sandbox_image_pull_error)
+        self.add_metric(self.rg_available)
         self.add_metric(self.patch_broke_tests)
 
     async def submitted(self, state: vf.State) -> int:
@@ -273,34 +572,47 @@ class SelfCompactionMonitorRubric(vf.Rubric):
     async def sandbox_image_pull_error(self, state: vf.State) -> int:
         return int(bool(state.get("sandbox_image_pull_error")))
 
+    async def rg_available(self, state: vf.State) -> int:
+        value = state.get("rg_available")
+        return -1 if value is None else int(bool(value))
+
     async def patch_broke_tests(self, state: vf.State) -> int:
         return int(bool(state.get("patch_broke_tests")))
 
 
 class SelfCompactionToolMonitorRubric(vf.Rubric):
-    TOOL_NAMES = (
-        "execute_bash",
-        "search_files",
-        "read",
-        "edit_via_str_replace",
-        "compact",
-        "submit",
-    )
+    TOOL_NAMES = CANONICAL_TOOL_NAMES
+    ALIAS_TOOL_NAMES = tuple(TOOL_ALIASES)
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         self.add_metric(self.total_tool_calls)
+        self.add_metric(self.tool_alias_calls)
         for tool_name in self.TOOL_NAMES:
             self.add_metric(self._tool_count_metric(tool_name))
+        for tool_name in self.ALIAS_TOOL_NAMES:
+            self.add_metric(self._alias_tool_count_metric(tool_name))
 
     def _names(self, state: vf.State) -> list[str]:
         messages = state.get("full_rollout_messages")
         if not isinstance(messages, list):
             messages = state.get("completion", [])
-        return _tool_call_names(messages if isinstance(messages, list) else [])
+        return _canonical_tool_call_names(messages if isinstance(messages, list) else [])
+
+    def _alias_names(self, state: vf.State) -> list[str]:
+        messages = state.get("full_rollout_messages")
+        if not isinstance(messages, list):
+            messages = state.get("completion", [])
+        return _tool_alias_names(messages if isinstance(messages, list) else [])
 
     async def total_tool_calls(self, state: vf.State) -> int:
-        return len(self._names(state))
+        messages = state.get("full_rollout_messages")
+        if not isinstance(messages, list):
+            messages = state.get("completion", [])
+        return len(_tool_call_names(messages if isinstance(messages, list) else []))
+
+    async def tool_alias_calls(self, state: vf.State) -> int:
+        return len(self._alias_names(state))
 
     def _tool_count_metric(self, tool_name: str) -> Any:
         async def count_tool(state: vf.State) -> int:
@@ -308,6 +620,13 @@ class SelfCompactionToolMonitorRubric(vf.Rubric):
 
         count_tool.__name__ = f"{tool_name}_calls"
         return count_tool
+
+    def _alias_tool_count_metric(self, tool_name: str) -> Any:
+        async def count_tool_alias(state: vf.State) -> int:
+            return self._alias_names(state).count(tool_name)
+
+        count_tool_alias.__name__ = f"{tool_name}_alias_calls"
+        return count_tool_alias
 
 
 class SelfCompactionSandboxEnv(vf.SandboxEnv):
@@ -360,7 +679,8 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         self.repo_path = "/testbed"
         self.alt_path = "/root"
         self.harness = harness
-        self.labels = labels or ["self-compaction"]
+        base_labels = labels or ["self-compaction"]
+        self.labels = list(dict.fromkeys([*base_labels, *SANDBOX_IMAGE_HINT_LABELS]))
         self.max_retries = max_retries
         self.rollout_timeout_seconds = rollout_timeout_seconds
         self.max_command_timeouts = max_command_timeouts
@@ -391,8 +711,9 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         self.remove_tool(self.bash)
         self.add_tool(self.execute_bash)
         self.add_tool(self.search_files)
+        self._relax_tool_schema("search_files", required=["pattern"])
         self.add_tool(self.read)
-        self._relax_tool_schema("read", required=["path", "start_line", "end_line"])
+        self._relax_tool_schema("read", required=["path"])
         self.add_tool(self.edit_via_str_replace)
         self.add_tool(self.compact)
         self.add_tool(self.submit)
@@ -577,23 +898,27 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             working_dir=working_dir,
         )
 
-    async def search_files(self, pattern: str) -> str:
+    async def search_files(self, pattern: str, path: str | None = None) -> str:
         """Search repository text files for a Python regex or literal pattern.
 
         Args:
             pattern: Pattern to search for. Python regex syntax is supported;
                 invalid regexes are treated as literal text.
+            path: Optional file or directory path under the repository root.
         """
         return "Internal error: search_files is dispatched by the environment."
 
     async def _search_files_impl(
         self,
         pattern: str | None = None,
+        path: str | None = None,
         state: str | None = None,
         sandbox_command_timeout: int = 90,
         working_dir: str | None = None,
     ) -> str:
         args = ["-h"] if not pattern else ["--pattern", pattern]
+        if path:
+            args.extend(["--path", path])
         return await self.run_tool_script(
             SEARCH_FILES.name,
             args,
@@ -602,13 +927,21 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             working_dir=working_dir,
         )
 
-    async def read(self, path: str, start_line: int, end_line: int) -> str:
+    async def read(
+        self,
+        path: str,
+        start_line: int = 1,
+        end_line: int | None = None,
+        limit: int = 200,
+    ) -> str:
         """Read a bounded slice of a repository text file.
 
         Args:
             path: Path to a text file under the repository root.
-            start_line: 1-indexed line number where reading starts.
-            end_line: 1-indexed inclusive line number where reading ends.
+            start_line: 1-indexed line number where reading starts. Defaults to 1.
+            end_line: 1-indexed inclusive line number where reading ends. If omitted,
+                reads up to limit lines.
+            limit: Maximum number of lines to read when end_line is omitted.
         """
         return "Internal error: read is dispatched by the environment."
 
@@ -617,13 +950,23 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         path: str | None = None,
         start_line: int | None = None,
         end_line: int | None = None,
+        limit: int | None = None,
         state: str | None = None,
         sandbox_command_timeout: int = 90,
         working_dir: str | None = None,
     ) -> str:
-        if not path or start_line is None or end_line is None:
-            return "Error: read requires path, start_line, and end_line."
-        args = [path, "--start-line", str(start_line), "--end-line", str(end_line)]
+        if not path:
+            return "Error: read requires path."
+        try:
+            start = int(start_line) if start_line is not None else 1
+            if end_line is None:
+                read_limit = int(limit) if limit is not None else 200
+                end = start + read_limit - 1
+            else:
+                end = int(end_line)
+        except (TypeError, ValueError):
+            return "Error: start_line, end_line, and limit must be integers."
+        args = [path, "--start-line", str(start), "--end-line", str(end)]
         return await self.run_tool_script(
             READ_FILE.name,
             args,
@@ -758,12 +1101,11 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
     def _compatible_tool_args(
         self, tool_name: str, tool_args: dict[str, Any]
     ) -> dict[str, Any]:
-        if tool_name == "edit_via_str_replace":
-            return tool_args
+        canonical_tool_name = _canonical_tool_name(tool_name)
         updated = dict(tool_args)
         aliases = {
             "execute_bash": {"cmd": "command"},
-            "search_files": {"query": "pattern"},
+            "search_files": {"query": "pattern", "regex": "pattern", "needle": "pattern"},
             "read": {
                 "file": "path",
                 "filepath": "path",
@@ -771,18 +1113,37 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
                 "start": "start_line",
                 "end": "end_line",
                 "stop_line": "end_line",
+                "max_lines": "limit",
+                "num_lines": "limit",
+            },
+            "edit_via_str_replace": {
+                "old": "old_str",
+                "new": "new_str",
+                "old_string": "old_str",
+                "new_string": "new_str",
             },
         }
-        for source, target in aliases.get(tool_name, {}).items():
+        for source, target in aliases.get(canonical_tool_name, {}).items():
             if target not in updated and source in updated:
                 updated[target] = updated[source]
         allowed = {
             "execute_bash": {"command"},
-            "search_files": {"pattern"},
-            "read": {"path", "start_line", "end_line"},
+            "search_files": {"pattern", "path"},
+            "read": {"path", "start_line", "end_line", "limit"},
+            "edit_via_str_replace": {
+                "path",
+                "old_str",
+                "new_str",
+                "context_lines",
+                "encoding",
+                "backup_suffix",
+                "dry_run",
+                "expand_tabs",
+                "tabsize",
+            },
             "compact": {"summary"},
             "submit": set(),
-        }.get(tool_name)
+        }.get(canonical_tool_name)
         if allowed is None:
             return updated
         return {key: value for key, value in updated.items() if key in allowed}
@@ -791,7 +1152,8 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         self, tool_name: str, kwargs: dict[str, Any]
     ) -> dict[str, Any]:
         state = kwargs.get("state")
-        if tool_name in {
+        canonical_tool_name = _canonical_tool_name(tool_name)
+        if canonical_tool_name in {
             "execute_bash",
             "search_files",
             "read",
@@ -802,13 +1164,14 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
                 "sandbox_command_timeout": self.sandbox_command_timeout,
                 "working_dir": self.repo_path,
             }
-        if tool_name in {"compact", "submit"}:
+        if canonical_tool_name in {"compact", "submit"}:
             return {"state": state}
         return {}
 
     async def call_tool(
         self, tool_name: str, tool_args: dict[str, Any], tool_call_id: str, **kwargs: Any
     ) -> vf.Message:
+        canonical_tool_name = _canonical_tool_name(tool_name)
         dispatch = {
             "execute_bash": self._execute_bash_impl,
             "search_files": self._search_files_impl,
@@ -817,11 +1180,16 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             "compact": self._compact_impl,
             "submit": self._submit_impl,
         }
-        if tool_name not in dispatch:
+        if canonical_tool_name not in dispatch:
             return await super().call_tool(tool_name, tool_args, tool_call_id, **kwargs)
+        if canonical_tool_name != tool_name:
+            state = kwargs.get("state")
+            if isinstance(state, dict):
+                alias_counts = state.setdefault("tool_alias_counts", {})
+                alias_counts[tool_name] = int(alias_counts.get(tool_name, 0)) + 1
         call_args = self._compatible_tool_args(tool_name, tool_args)
         call_args.update(self._internal_tool_args(tool_name, kwargs))
-        result = await dispatch[tool_name](**call_args)
+        result = await dispatch[canonical_tool_name](**call_args)
         return vf.ToolMessage(role="tool", content=str(result), tool_call_id=tool_call_id)
 
     async def run_tool_script(
@@ -860,6 +1228,94 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             self._raise_retry_exhausted_sandbox_error(
                 state.get("sandbox_id", "unknown"), "Tool upload", exc
             )
+
+    async def check_sandbox_tool_availability(self, state: vf.State) -> None:
+        checks = [
+            (
+                command_name,
+                package_name,
+                f"if command -v {shlex.quote(command_name)} >/dev/null 2>&1; "
+                f"then echo {shlex.quote(command_name)}=available; "
+                f"else echo {shlex.quote(command_name)}=missing; fi",
+            )
+            for command_name, package_name in SANDBOX_TOOL_COMMANDS.items()
+        ]
+        status: dict[str, str] = {}
+        packages: dict[str, str] = {}
+        for command_name, package_name, check_command in checks:
+            packages[command_name] = package_name
+            try:
+                exit_code, output = await self._execute_command(
+                    state,
+                    check_command,
+                    timeout=30,
+                    working_dir=self.repo_path,
+                )
+            except Exception as exc:
+                status[command_name] = "unknown"
+                self.logger.warning(
+                    f"sandbox_id={state.get('sandbox_id', 'unknown')} failed to "
+                    f"check sandbox command {command_name!r}: {repr(exc)}"
+                )
+                continue
+            if exit_code == 0 and f"{command_name}=available" in output:
+                status[command_name] = "available"
+            elif f"{command_name}=missing" in output:
+                status[command_name] = "missing"
+            else:
+                status[command_name] = "unknown"
+                self.logger.warning(
+                    f"sandbox_id={state.get('sandbox_id', 'unknown')} unexpected "
+                    f"availability check output for {command_name!r}: {output!r}"
+                )
+
+        state["sandbox_tool_status"] = status
+        state["sandbox_tool_packages"] = packages
+        state["rg_available"] = status.get("rg") == "available"
+
+    def _append_sandbox_tool_status_prompt(self, state: vf.State) -> None:
+        prompt = [_plain_message(message) for message in state["prompt"]]
+        prompt = [
+            message
+            for message in prompt
+            if not _message_content(message).lstrip().startswith(
+                "<sandbox_tool_status>"
+            )
+        ]
+        status = state.get("sandbox_tool_status", {})
+        rg_status = status.get("rg", "unknown") if isinstance(status, dict) else "unknown"
+        if rg_status == "available":
+            note = (
+                "<sandbox_tool_status>\n"
+                "`rg` is available inside `execute_bash`. You may use it for "
+                "bounded repository search, and the canonical tools "
+                "`search_files`, `read`, `execute_bash`, `edit_via_str_replace`, "
+                "`compact`, and `submit` remain available.\n"
+                "</sandbox_tool_status>"
+            )
+        elif rg_status == "missing":
+            note = (
+                "<sandbox_tool_status>\n"
+                "`rg` is not available inside `execute_bash` for this sandbox "
+                "image. Do not run `rg` shell commands. Use "
+                "`search_files(pattern=..., path=...)`, `read(path=...)`, "
+                "`find`, `grep -R`, `sed -n`, `head`, and short Python snippets "
+                "instead.\n"
+                "</sandbox_tool_status>"
+            )
+        else:
+            note = (
+                "<sandbox_tool_status>\n"
+                "`rg` availability could not be confirmed for this sandbox image. "
+                "Prefer `search_files(pattern=..., path=...)` and `read(path=...)`; "
+                "if you use shell search, fall back to `grep -R`, `find`, `sed -n`, "
+                "`head`, and short Python snippets.\n"
+                "</sandbox_tool_status>"
+            )
+        prompt.append({"role": "user", "content": note})
+        state["prompt"] = prompt
+        state["full_rollout_messages"] = list(prompt)
+        state["agent_visible_messages"] = list(prompt)
 
     async def setup_repo(self, state: vf.State) -> None:
         if self.harness == "swebench":
@@ -993,6 +1449,8 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         try:
             await self.setup_repo(state)
             await self.upload_tools(state)
+            await self.check_sandbox_tool_availability(state)
+            self._append_sandbox_tool_status_prompt(state)
         except Exception as exc:
             docker_image = state["info"].get("docker_image", "unknown")
             sandbox_id = state.get("sandbox_id", "unknown")
@@ -1011,18 +1469,24 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         **kwargs: Any,
     ) -> dict[str, Any]:
         updated_args = dict(tool_args)
-        if tool_name in {"execute_bash", "search_files", "edit_via_str_replace"}:
+        canonical_tool_name = _canonical_tool_name(tool_name)
+        if canonical_tool_name in {
+            "execute_bash",
+            "search_files",
+            "read",
+            "edit_via_str_replace",
+        }:
             updated_args["state"] = state
             updated_args["sandbox_command_timeout"] = self.sandbox_command_timeout
             updated_args["working_dir"] = self.repo_path
-            if tool_name == "edit_via_str_replace":
+            if canonical_tool_name == "edit_via_str_replace":
                 updated_args.setdefault("context_lines", 3)
                 updated_args.setdefault("encoding", "utf-8")
                 updated_args.setdefault("backup_suffix", "")
                 updated_args.setdefault("dry_run", False)
                 updated_args.setdefault("expand_tabs", False)
                 updated_args.setdefault("tabsize", 8)
-        elif tool_name in {"compact", "submit"}:
+        elif canonical_tool_name in {"compact", "submit"}:
             updated_args["state"] = state
         return updated_args
 
@@ -1148,6 +1612,7 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
             self._append_audit_messages(state, assistant_message, env_messages)
             return env_messages
 
+        canonical_tool_name = _canonical_tool_name(tool_name)
         try:
             tool_args = self.update_tool_args(
                 tool_name, tool_args, messages, state, **kwargs
@@ -1172,7 +1637,7 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
         tool_message_dict = _plain_message(tool_message)
         env_messages.append(tool_message_dict)
 
-        if tool_name == "compact" and state.get("pending_compaction_summary"):
+        if canonical_tool_name == "compact" and state.get("pending_compaction_summary"):
             summary = state.pop("pending_compaction_summary")
             state["pending_visible_prompt"] = self._compacted_prompt(
                 state,
@@ -1181,11 +1646,11 @@ class SelfCompactionSandboxEnv(vf.SandboxEnv):
                 env_messages=env_messages,
             )
 
-        if tool_name == "submit" and state.get("submitted"):
+        if canonical_tool_name == "submit" and state.get("submitted"):
             state["final_env_response"] = env_messages
 
         if not self._tool_message_is_error(tool_message_dict):
-            state["last_successful_tool_name"] = tool_name
+            state["last_successful_tool_name"] = canonical_tool_name
 
         self._append_audit_messages(state, assistant_message, env_messages)
         trunc = pprint.pformat(env_messages)
@@ -1568,6 +2033,9 @@ def load_environment(
     dataset_name: str = DEFAULT_DATASET_NAME,
     split: str | None = None,
     simple_only: bool = True,
+    difficulty: str = "all",
+    difficulty_mix: Sequence[float] | str | None = None,
+    difficulty_map_path: str | None = None,
     max_turns: int = DEFAULT_MAX_TURNS,
     sandbox_command_timeout: int = 90,
     total_timeout_minutes: int = 360,
@@ -1590,6 +2058,11 @@ def load_environment(
 ) -> vf.Environment:
     resolved_split = split or _default_split(dataset_name)
     harness = _harness_for_dataset(dataset_name)
+    resolved_difficulty = _coerce_difficulty(difficulty)
+    resolved_difficulty_mix = _coerce_difficulty_mix(difficulty_mix)
+    if resolved_difficulty_mix is not None and resolved_difficulty != "all":
+        raise ValueError("Use either difficulty or difficulty_mix, not both.")
+    difficulty_map = _load_difficulty_map(difficulty_map_path)
 
     def build_dataset() -> Dataset:
         dataset = load_dataset(dataset_name, split=resolved_split)
@@ -1602,9 +2075,29 @@ def load_environment(
             )
         if simple_only:
             dataset = dataset.filter(_passes_simple_filter)
-        if seed is not None:
+        dataset = dataset.map(
+            lambda row: _annotate_difficulty(
+                row,
+                dataset_name=dataset_name,
+                split=resolved_split,
+                difficulty_map=difficulty_map,
+            )
+        )
+        if resolved_difficulty != "all":
+            dataset = dataset.filter(
+                lambda row: row["difficulty"] == resolved_difficulty
+            )
+        if resolved_difficulty_mix is not None:
+            target_count = len(dataset) if num_examples is None else int(num_examples)
+            dataset = _select_mixed_difficulty_dataset(
+                dataset,
+                resolved_difficulty_mix,
+                target_count,
+                seed,
+            )
+        elif seed is not None:
             dataset = dataset.shuffle(seed=seed)
-        if num_examples is not None:
+        if resolved_difficulty_mix is None and num_examples is not None:
             dataset = dataset.select(range(min(int(num_examples), len(dataset))))
         return dataset.map(_process_example, remove_columns=dataset.column_names)
 
@@ -1637,6 +2130,13 @@ def load_environment(
             "dataset_name": dataset_name,
             "split": resolved_split,
             "simple_only": simple_only,
+            "difficulty": resolved_difficulty,
+            "difficulty_mix": (
+                list(resolved_difficulty_mix)
+                if resolved_difficulty_mix is not None
+                else None
+            ),
+            "difficulty_map_path": difficulty_map_path,
             "min_compactions": min_compactions,
             "max_summary_chars": max_summary_chars,
         },

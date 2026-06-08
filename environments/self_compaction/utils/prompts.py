@@ -35,7 +35,7 @@ Available workflow:
 
 Available tools:
 - `search_files(pattern: str)`
-- `read(path: str, start_line: int, end_line: int)`
+- `read(path: str, start_line: int = 1, end_line: int | None = None, limit: int = 200)`
 - `execute_bash(command: str)`
 - `edit_via_str_replace(path: str, old_str: str, new_str: str)`
 - `compact(summary: str)`
@@ -47,10 +47,11 @@ Important boundaries:
 - Commands run in fresh subshells. Prefix commands with `cd /testbed && ...`
   when needed, or rely on the default repository working directory.
 - Avoid interactive commands.
-- `rg` is often unavailable in these sandboxes. Prefer `search_files`, `read`,
+- A sandbox tool-status note will say whether `rg` is available inside
+  `execute_bash`. If it is missing, do not run `rg`; use `search_files`, `read`,
   `find`, `grep -R`, `sed -n`, `head`, and short Python snippets.
-- `read` requires explicit start and end line numbers and returns at most 200
-  lines at a time. Use `search_files` first when you do not know where to read.
+- `read` returns at most 200 lines at a time. Use `read(path)` for the first
+  200 lines, or provide `start_line` with `end_line` or `limit`.
 - Keep command output bounded. Avoid broad searches through `.venv`,
   `site-packages`, or generated directories.
 - Run focused tests first. Full-suite commands and package installs can time out.
@@ -69,7 +70,7 @@ SYSTEM_PROMPT = """You are a helpful coding agent that solves programming tasks 
 Rules:
 - Every assistant response must contain exactly one tool call.
 - Available tools are `search_files`, `read`, `execute_bash`, `edit_via_str_replace`, `compact`, and `submit`.
-- Use `read(path, start_line, end_line)` for bounded file inspection after search.
+- Use `read(path)`, `read(path, start_line, end_line)`, or `read(path, start_line, limit=...)` for bounded file inspection after search.
 - Use `compact` at least once before `submit`.
 - The original task prompt remains visible after `compact`.
 - After `compact`, earlier working history is gone except for the summary you wrote.

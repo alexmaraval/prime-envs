@@ -27,14 +27,20 @@ def main() -> int:
     parser.add_argument(
         "--start-line",
         type=int,
-        required=True,
+        default=1,
         help="1-indexed line number where reading starts",
     )
     parser.add_argument(
         "--end-line",
         type=int,
-        required=True,
+        default=None,
         help="1-indexed inclusive line number where reading ends",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=MAX_LINES,
+        help=f"Maximum lines to read when --end-line is omitted (default: {MAX_LINES})",
     )
     args = parser.parse_args()
 
@@ -57,6 +63,11 @@ def main() -> int:
     if start_line < 1:
         sys.stderr.write("--start-line must be >= 1\n")
         return 1
+    if end_line is None:
+        if args.limit < 1:
+            sys.stderr.write("--limit must be >= 1\n")
+            return 1
+        end_line = start_line + args.limit - 1
     if end_line < start_line:
         sys.stderr.write("--end-line must be greater than or equal to --start-line\n")
         return 1
